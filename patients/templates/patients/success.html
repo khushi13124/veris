@@ -1,0 +1,717 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Registration Complete | Veris{% endblock %}
+
+{% block content %}
+<style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+        --primary:       #1d4ed8;
+        --primary-dark:  #0e2e72;
+        --primary-light: #eff6ff;
+        --primary-mid:   #bfdbfe;
+        --success:       #10b981;
+        --success-light: #dcfce7;
+        --success-mid:   #a7f3d0;
+        --border:        #e2e8f0;
+        --text-dark:     #0f172a;
+        --text-muted:    #64748b;
+        --bg-page:       #f8fafc;
+        --bg-card:       #ffffff;
+        --error:         #ef4444;
+    }
+
+    body { background: var(--bg-page); }
+
+    .page-header { text-align: center; margin-bottom: 30px; }
+    .page-header .logo { font-size: 28px; font-weight: 700; color: var(--primary-dark); }
+    .page-header p { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+
+    .progress-wrapper { max-width: 960px; margin: 0 auto 28px auto; }
+    .progress-steps { display: flex; align-items: center; justify-content: center; }
+    .step { display: flex; flex-direction: column; align-items: center; position: relative; flex: 1; }
+    .step:not(:last-child)::after {
+        content: ''; position: absolute; top: 18px; left: 60%;
+        width: 80%; height: 3px; background: var(--success); z-index: 0;
+    }
+    .step-circle {
+        width: 38px; height: 38px; border-radius: 50%;
+        background: var(--success); color: white;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 15px; z-index: 1;
+        border: 3px solid #fff; box-shadow: 0 0 0 3px var(--success-mid);
+    }
+    .step-label { font-size: 12px; color: var(--success); margin-top: 6px; font-weight: 600; text-align: center; }
+
+    .success-wrapper { max-width: 860px; margin: 0 auto; }
+
+    /* ── Success banner ── */
+    .success-banner {
+        background: var(--success-light); border: 2px solid var(--success-mid);
+        border-radius: 14px; padding: 20px 28px; margin-bottom: 20px;
+        display: flex; align-items: center; gap: 18px;
+    }
+    .success-icon {
+        width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+        background: linear-gradient(135deg, var(--success), #059669);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 24px; box-shadow: 0 4px 16px rgba(16,185,129,0.3);
+    }
+    .success-text h2 { font-size: 17px; font-weight: 700; color: #065f46; }
+    .success-text p  { font-size: 13px; color: #047857; margin-top: 3px; }
+
+    /* ── Patient Profile Hero ── */
+    .profile-hero {
+        background: linear-gradient(135deg, #0e2e72 0%, #1a4494 60%, #1d4ed8 100%);
+        border-radius: 16px; padding: 28px 32px; margin-bottom: 20px; color: white;
+        box-shadow: 0 8px 32px rgba(14,46,114,0.35);
+        display: flex; align-items: center; gap: 28px; position: relative; overflow: hidden;
+    }
+    .profile-hero::before {
+        content: ''; position: absolute; right: -40px; top: -40px;
+        width: 200px; height: 200px; border-radius: 50%;
+        background: rgba(255,255,255,0.05); pointer-events: none;
+    }
+    .profile-hero::after {
+        content: ''; position: absolute; right: 60px; bottom: -60px;
+        width: 160px; height: 160px; border-radius: 50%;
+        background: rgba(255,255,255,0.04); pointer-events: none;
+    }
+
+    .hero-photo { flex-shrink: 0; position: relative; }
+    .hero-photo img {
+        width: 100px; height: 100px; border-radius: 50%; object-fit: cover;
+        border: 4px solid rgba(255,255,255,0.35);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3); display: block;
+    }
+    .hero-photo .photo-ring {
+        position: absolute; inset: -6px; border-radius: 50%;
+        border: 2px dashed rgba(255,255,255,0.25);
+    }
+
+    .hero-info { flex: 1; min-width: 0; }
+    .hero-name {
+        font-size: 22px; font-weight: 800; letter-spacing: -0.3px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px;
+    }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .hero-chip {
+        background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+        border-radius: 20px; padding: 3px 11px; font-size: 12px; font-weight: 500;
+    }
+    .hero-chip.blood {
+        background: rgba(239,68,68,0.25); border-color: rgba(239,68,68,0.4); font-weight: 700;
+    }
+    .hero-pid-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .hero-pid-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.65; }
+    .hero-pid-value {
+        font-size: 17px; font-weight: 900; letter-spacing: 2px;
+        font-family: 'Courier New', monospace;
+        background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+        padding: 4px 14px; border-radius: 8px;
+    }
+
+    .hero-stats { flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+    .hero-stat { text-align: right; }
+    .hero-stat-label { font-size: 10px; opacity: 0.6; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+    .hero-stat-value { font-size: 14px; font-weight: 700; margin-top: 2px; }
+    .reg-badge {
+        background: rgba(16,185,129,0.25); border: 1px solid rgba(16,185,129,0.4);
+        color: #6ee7b7; border-radius: 20px; padding: 5px 14px;
+        font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 5px;
+    }
+
+    /* ── Info card wrapper ── */
+    .info-card {
+        background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 12px; overflow: hidden; margin-bottom: 18px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+    }
+    .sec-header {
+        background: var(--primary-dark); padding: 14px 28px;
+        display: flex; align-items: center; justify-content: space-between; color: white;
+    }
+    .sec-header h3  { font-size: 14px; font-weight: 700; }
+    .sec-header .sh-badge {
+        font-size: 11px; background: rgba(255,255,255,0.18);
+        padding: 2px 10px; border-radius: 20px; font-weight: 600;
+    }
+
+    .info-body { padding: 4px 28px 8px; }
+    .info-row {
+        display: flex; align-items: baseline; justify-content: space-between;
+        padding: 13px 0; border-bottom: 1px solid #f1f5f9; gap: 24px; font-size: 14px;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: var(--text-muted); font-weight: 500; white-space: nowrap; flex-shrink: 0; min-width: 180px; }
+    .info-value { color: var(--text-dark); font-weight: 600; text-align: right; word-break: break-word; flex: 1; }
+
+    .badge-blood {
+        display: inline-block; padding: 2px 12px; border-radius: 20px;
+        background: #fef2f2; color: #dc2626; font-size: 13px; font-weight: 700;
+        border: 1px solid #fecaca;
+    }
+    .cond-tag {
+        display: inline-block; background: var(--primary-light); color: var(--primary);
+        border: 1px solid var(--primary-mid); border-radius: 6px;
+        padding: 3px 10px; font-size: 12px; font-weight: 600; margin: 2px 3px 2px 0;
+    }
+    .med-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
+    .med-table th {
+        background: var(--primary-light); color: var(--primary-dark); font-weight: 700;
+        padding: 9px 14px; text-align: left; border-bottom: 2px solid var(--primary-mid);
+    }
+    .med-table td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: var(--text-dark); }
+    .med-table tr:last-child td { border-bottom: none; }
+    .med-table tr:hover td { background: #f8fafc; }
+
+    .bmi-bar-wrap { padding: 0 28px 20px; }
+    .bmi-bar-track { height: 10px; border-radius: 10px; background: #e2e8f0; margin-top: 6px; overflow: hidden; }
+    .bmi-bar-fill { height: 10px; border-radius: 10px; transition: width 0.6s ease; }
+    .bmi-bar-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 5px; }
+
+    .consent-body { padding: 4px 28px 8px; }
+    .consent-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
+    .consent-row:last-child { border-bottom: none; }
+    .consent-check { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    .check-yes { background: var(--success-light); color: var(--success); }
+    .check-no  { background: #f3f4f6; color: #9ca3af; }
+    .consent-label-text { font-size: 13px; font-weight: 600; color: var(--text-dark); }
+    .consent-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; display: block; }
+
+    .no-data { font-size: 13px; color: var(--text-muted); font-style: italic; padding: 14px 0; }
+
+    /* ── Bottom action row (2 buttons only) ── */
+    .action-row {
+        display: flex; gap: 14px; justify-content: center;
+        margin-top: 28px; margin-bottom: 40px;
+    }
+    .btn-home {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: white; color: var(--primary-dark);
+        border: 2px solid var(--primary-dark);
+        padding: 13px 28px; border-radius: 10px; font-size: 15px; font-weight: 600;
+        cursor: pointer; transition: all 0.2s; text-decoration: none;
+    }
+    .btn-home:hover { background: var(--primary-light); }
+    .btn-pdf {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: var(--primary-dark); color: white; border: none;
+        padding: 13px 28px; border-radius: 10px; font-size: 15px; font-weight: 600;
+        cursor: pointer; transition: all 0.2s;
+    }
+    .btn-pdf:hover { background: var(--primary); transform: translateY(-1px); }
+    .btn-pdf:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    @media (max-width: 640px) {
+        .profile-hero { flex-direction: column; align-items: flex-start; gap: 18px; padding: 20px; }
+        .hero-photo img { width: 80px; height: 80px; }
+        .hero-stats { align-items: flex-start; }
+        .action-row { flex-direction: column; }
+        .info-label { min-width: 130px; }
+        .sec-header, .info-body, .consent-body, .bmi-bar-wrap { padding-left: 16px; padding-right: 16px; }
+    }
+</style>
+
+<div class="page-header">
+    <div class="logo">Patient Registration</div>
+    <p>Hospital Management System</p>
+</div>
+
+<!-- All-done progress -->
+<div class="progress-wrapper">
+    <div class="progress-steps">
+        <div class="step"><div class="step-circle">✓</div><div class="step-label">Patient Info</div></div>
+        <div class="step"><div class="step-circle">✓</div><div class="step-label">Medical History</div></div>
+        <div class="step"><div class="step-circle">✓</div><div class="step-label">Complete</div></div>
+    </div>
+</div>
+
+<div class="success-wrapper">
+
+    <!-- Success Banner -->
+    <div class="success-banner">
+        <div class="success-icon">✓</div>
+        <div class="success-text">
+            <h2>Registration Successful!</h2>
+            <p>Patient record created. Personal information and medical history are saved and linked to the Patient ID below.</p>
+        </div>
+    </div>
+
+    <!-- Patient Profile Hero -->
+    <div class="profile-hero">
+        <div class="hero-photo">
+            {% if patient.profile_photo %}
+                <img src="{{ patient.profile_photo.url }}" alt="{{ patient.full_name }}">
+            {% else %}
+                <img src="https://ui-avatars.com/api/?name={{ patient.full_name|urlencode }}&background=1a4494&color=fff&size=200&bold=true" alt="{{ patient.full_name }}">
+            {% endif %}
+            <div class="photo-ring"></div>
+        </div>
+        <div class="hero-info">
+            <div class="hero-name">{{ patient.full_name }}</div>
+            <div class="hero-meta">
+                <span class="hero-chip">{{ patient.gender }}</span>
+                <span class="hero-chip">Age {{ patient.age }}</span>
+                <span class="hero-chip blood">{{ patient.blood_group }}</span>
+                <span class="hero-chip">{{ patient.marital_status }}</span>
+            </div>
+            <div class="hero-pid-row">
+                <span class="hero-pid-label">Patient ID</span>
+                <span class="hero-pid-value">{{ patient.patient_id }}</span>
+            </div>
+        </div>
+        <div class="hero-stats">
+            <div class="reg-badge"><span>✓</span> Registered</div>
+            <div class="hero-stat">
+                <div class="hero-stat-label">Registered On</div>
+                <div class="hero-stat-value">{{ patient.created_at|date:"F j, Y" }}</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-label">Mobile</div>
+                <div class="hero-stat-value">{{ patient.mobile_number }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION A: PERSONAL INFO -->
+    <div class="info-card">
+        <div class="sec-header">
+            <h3>👤 Personal Information</h3>
+            <span class="sh-badge">Section A</span>
+        </div>
+        <div class="info-body">
+            <div class="info-row"><span class="info-label">Full Name</span><span class="info-value">{{ patient.full_name }}</span></div>
+            <div class="info-row"><span class="info-label">Date of Birth</span><span class="info-value">{{ patient.date_of_birth|date:"F j, Y" }}</span></div>
+            <div class="info-row"><span class="info-label">Age</span><span class="info-value">{{ patient.age }} years</span></div>
+            <div class="info-row"><span class="info-label">Gender</span><span class="info-value">{{ patient.gender }}</span></div>
+            <div class="info-row"><span class="info-label">Blood Group</span><span class="info-value"><span class="badge-blood">{{ patient.blood_group }}</span></span></div>
+            <div class="info-row"><span class="info-label">Marital Status</span><span class="info-value">{{ patient.marital_status }}</span></div>
+        </div>
+    </div>
+
+    <!-- SECTION B: CONTACT INFO -->
+    <div class="info-card">
+        <div class="sec-header">
+            <h3>📞 Contact Information</h3>
+            <span class="sh-badge">Section B</span>
+        </div>
+        <div class="info-body">
+            <div class="info-row"><span class="info-label">Mobile Number</span><span class="info-value">{{ patient.mobile_number }}</span></div>
+            <div class="info-row"><span class="info-label">Email Address</span><span class="info-value">{{ patient.email }}</span></div>
+            {% if patient.alternate_contact %}
+            <div class="info-row"><span class="info-label">Alternate Contact</span><span class="info-value">{{ patient.alternate_contact }}</span></div>
+            {% endif %}
+            <div class="info-row"><span class="info-label">Full Address</span><span class="info-value">{{ patient.address }}</span></div>
+            <div class="info-row"><span class="info-label">PIN Code</span><span class="info-value">{{ patient.pin_code }}</span></div>
+            <div class="info-row"><span class="info-label">City</span><span class="info-value">{{ patient.city }}</span></div>
+            <div class="info-row"><span class="info-label">State</span><span class="info-value">{{ patient.state }}</span></div>
+        </div>
+    </div>
+
+    <!-- SECTION C: IDENTIFICATION -->
+    <div class="info-card">
+        <div class="sec-header">
+            <h3>🪪 Identification &amp; Insurance</h3>
+            <span class="sh-badge">Section C</span>
+        </div>
+        <div class="info-body">
+            <div class="info-row"><span class="info-label">ID Type</span><span class="info-value">{{ patient.id_type }}</span></div>
+            <div class="info-row"><span class="info-label">ID Number</span><span class="info-value">{{ patient.id_number }}</span></div>
+            <div class="info-row"><span class="info-label">Insurance Provider</span><span class="info-value">{{ patient.insurance_provider }}</span></div>
+            <div class="info-row"><span class="info-label">Policy Number</span><span class="info-value">{{ patient.insurance_policy_number|default:"—" }}</span></div>
+        </div>
+    </div>
+
+    {% if medical_history %}
+
+    <!-- SECTION D: MEDICAL CONDITIONS -->
+    <div class="info-card">
+        <div class="sec-header">
+            <h3>🏥 Medical Conditions</h3>
+            <span class="sh-badge">Section D</span>
+        </div>
+        <div class="info-body">
+            <div class="info-row">
+                <span class="info-label">Conditions</span>
+                <span class="info-value">
+                    {% if medical_history.medical_conditions %}
+                        {% for cond in medical_history.medical_conditions %}<span class="cond-tag">{{ cond }}</span>{% endfor %}
+                    {% else %}
+                        <span style="color:var(--text-muted);font-style:italic;">None recorded</span>
+                    {% endif %}
+                </span>
+            </div>
+            {% if medical_history.condition_details %}
+            <div class="info-row">
+                <span class="info-label">Details</span>
+                <span class="info-value" style="white-space:pre-line;">{{ medical_history.condition_details }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- SECTION E: MEDICATIONS -->
+    <div class="info-card">
+        <div class="sec-header">
+            <h3>💊 Medications</h3>
+            <span class="sh-badge">Section E</span>
+        </div>
+        <div class="info-body">
+            {% if medical_history.current_medications %}
+            <p style="font-size:13px;font-weight:600;color:#374151;padding-top:10px;margin-bottom:8px;">Current Medications</p>
+            <table class="med-table">
+                <thead><tr><th>#</th><th>Medication</th><th>Dosage</th><th>Frequency</th><th>Since</th></tr></thead>
+                <tbody>
+                    {% for med in medical_history.current_medications %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ med.name|default:"—" }}</td>
+                        <td>{{ med.dosage|default:"—" }}</td>
+                        <td>{{ med.frequency|default:"—" }}</td>
+                        <td>{{ med.since|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="no-data">No current medications recorded.</p>
+            {% endif %}
+            {% if medical_history.past_medications %}
+            <div class="info-row" style="margin-top:10px;">
+                <span class="info-label">Past Medications</span>
+                <span class="info-value" style="white-space:pre-line;">{{ medical_history.past_medications }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- SECTION F: CLINICAL HISTORY -->
+    <div class="info-card">
+        <div class="sec-header">
+            <h3>📋 Clinical History</h3>
+            <span class="sh-badge">Section F</span>
+        </div>
+        <div class="info-body">
+            <div class="info-row"><span class="info-label">Surgeries / Hospitalizations</span><span class="info-value">{{ medical_history.surgeries|default:"None recorded" }}</span></div>
+            <div class="info-row"><span class="info-label">Known Allergies</span><span class="info-value">{{ medical_history.allergies|default:"None recorded" }}</span></div>
+            <div class="info-row"><span class="info-label">Family History</span><span class="info-value">{{ medical_history.family_history|default:"None recorded" }}</span></div>
+        </div>
+    </div>
+
+    <!-- SECTION G: LIFESTYLE -->
+    <div class="info-card">
+        <div class="sec-header">
+            <h3>🏃 Lifestyle &amp; Physical Measurements</h3>
+            <span class="sh-badge">Section G</span>
+        </div>
+        <div class="info-body">
+            <div class="info-row"><span class="info-label">Smoking</span><span class="info-value">{{ medical_history.smoking }}</span></div>
+            <div class="info-row"><span class="info-label">Alcohol</span><span class="info-value">{{ medical_history.alcohol }}</span></div>
+            <div class="info-row"><span class="info-label">Exercise</span><span class="info-value">{{ medical_history.exercise }}</span></div>
+            <div class="info-row"><span class="info-label">Height</span><span class="info-value">{{ medical_history.height_cm }} cm</span></div>
+            <div class="info-row"><span class="info-label">Weight</span><span class="info-value">{{ medical_history.weight_kg }} kg</span></div>
+            <div class="info-row"><span class="info-label">BMI</span><span class="info-value" id="bmi-val-display">{{ medical_history.bmi|default:"—" }}</span></div>
+        </div>
+        {% if medical_history.bmi %}
+        <div class="bmi-bar-wrap">
+            <div class="bmi-bar-track"><div class="bmi-bar-fill" id="bmi-bar" style="width:0;"></div></div>
+            <div class="bmi-bar-labels">
+                <span>Underweight &lt;18.5</span>
+                <span>Normal 18.5–24.9</span>
+                <span>Overweight 25–29.9</span>
+                <span>Obese ≥30</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- SECTION H: CONSENT -->
+    <div class="info-card">
+        <div class="sec-header">
+            <h3>✅ Consent &amp; Declaration</h3>
+            <span class="sh-badge">Section H</span>
+        </div>
+        <div class="consent-body">
+            <div class="consent-row">
+                <div class="consent-check {% if medical_history.confirm_information %}check-yes{% else %}check-no{% endif %}">{% if medical_history.confirm_information %}✓{% else %}✗{% endif %}</div>
+                <div><div class="consent-label-text">Accuracy Confirmation</div><span class="consent-sub">Patient confirmed all provided information is accurate and complete.</span></div>
+            </div>
+            <div class="consent-row">
+                <div class="consent-check {% if medical_history.agree_data_policy %}check-yes{% else %}check-no{% endif %}">{% if medical_history.agree_data_policy %}✓{% else %}✗{% endif %}</div>
+                <div><div class="consent-label-text">Data Privacy Policy</div><span class="consent-sub">Patient agreed to secure storage and medical use of data.</span></div>
+            </div>
+            <div class="consent-row">
+                <div class="consent-check {% if medical_history.agree_research %}check-yes{% else %}check-no{% endif %}">{% if medical_history.agree_research %}✓{% else %}✗{% endif %}</div>
+                <div>
+                    <div class="consent-label-text">Research Consent <span style="font-size:11px;font-weight:400;color:#9ca3af;">(Optional)</span></div>
+                    <span class="consent-sub">Patient {% if medical_history.agree_research %}consented{% else %}did not consent{% endif %} to anonymized data use for research.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="info-card">
+        <div class="sec-header"><h3>🏥 Medical History</h3></div>
+        <div class="info-body"><p class="no-data" style="padding:20px 0;">Medical history not yet recorded.</p></div>
+    </div>
+    {% endif %}
+
+    <!-- ── 2 Bottom Action Buttons ── -->
+    <div class="action-row">
+        <a href="/" class="btn-home">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Back to Home
+        </a>
+        <button class="btn-pdf" id="downloadPdfBtn" onclick="generatePDF()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download PDF
+        </button>
+    </div>
+
+</div><!-- /success-wrapper -->
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+    // ── BMI bar animation ──────────────────────────────────────────────────
+    window.addEventListener('DOMContentLoaded', function () {
+        const bmiBar        = document.getElementById('bmi-bar');
+        const bmiValDisplay = document.getElementById('bmi-val-display');
+        const bmiVal        = parseFloat('{{ medical_history.bmi|default:"0" }}');
+
+        if (bmiBar && bmiVal > 0) {
+            const pct = Math.min((bmiVal / 40) * 100, 100).toFixed(1);
+            let color = '#10b981';
+            if      (bmiVal < 18.5) color = '#f59e0b';
+            else if (bmiVal < 25)   color = '#10b981';
+            else if (bmiVal < 30)   color = '#f97316';
+            else                    color = '#ef4444';
+            setTimeout(() => { bmiBar.style.width = pct + '%'; bmiBar.style.background = color; }, 400);
+            if (bmiValDisplay) { bmiValDisplay.style.color = color; bmiValDisplay.style.fontWeight = '800'; }
+        }
+    });
+
+    // ── Simple Clean PDF Generator ────────────────────────────────────────
+    function generatePDF() {
+        const btn = document.getElementById('downloadPdfBtn');
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Generating...';
+
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+            const W = 210, margin = 18;
+            let y = 0;
+
+            // ── Helpers ──────────────────────────────────────────
+            function addPage() {
+                doc.addPage();
+                y = 20;
+            }
+            function checkPageBreak(needed) {
+                if (y + needed > 270) addPage();
+            }
+            function hLine(color) {
+                doc.setDrawColor(...(color || [220, 224, 232]));
+                doc.setLineWidth(0.3);
+                doc.line(margin, y, W - margin, y);
+                y += 4;
+            }
+            function sectionHeader(title, badge) {
+                checkPageBreak(14);
+                doc.setFillColor(14, 46, 114);
+                doc.roundedRect(margin, y, W - margin * 2, 10, 2, 2, 'F');
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(10);
+                doc.setTextColor(255, 255, 255);
+                doc.text(title, margin + 4, y + 6.8);
+                if (badge) {
+                    doc.setFontSize(8);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(badge, W - margin - 4, y + 6.8, { align: 'right' });
+                }
+                y += 13;
+            }
+            function row(label, value) {
+                checkPageBreak(9);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(9);
+                doc.setTextColor(100, 116, 139);
+                doc.text(label, margin + 2, y);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(15, 23, 42);
+                const lines = doc.splitTextToSize(String(value || '—'), 90);
+                doc.text(lines, W - margin - 2, y, { align: 'right' });
+                y += (lines.length > 1 ? lines.length * 5 : 7);
+                doc.setDrawColor(241, 245, 249);
+                doc.setLineWidth(0.2);
+                doc.line(margin, y - 1, W - margin, y - 1);
+            }
+            function textBlock(label, value) {
+                checkPageBreak(12);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(9);
+                doc.setTextColor(100, 116, 139);
+                doc.text(label, margin + 2, y);
+                y += 5;
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(15, 23, 42);
+                const lines = doc.splitTextToSize(String(value || '—'), W - margin * 2 - 4);
+                lines.forEach(l => { checkPageBreak(6); doc.text(l, margin + 2, y); y += 5; });
+                y += 2;
+            }
+
+            // ══════════════ PAGE 1 ══════════════
+            // Header bar
+            doc.setFillColor(14, 46, 114);
+            doc.rect(0, 0, W, 22, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(14);
+            doc.setTextColor(255, 255, 255);
+            doc.text('Patient Medical Record', margin, 14);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(191, 219, 254);
+            doc.text('Hospital Management System', W - margin, 9, { align: 'right' });
+            doc.text('Generated: {{ patient.created_at|date:"F j, Y" }}', W - margin, 16, { align: 'right' });
+
+            y = 30;
+
+            // Patient ID pill
+            doc.setFillColor(239, 246, 255);
+            doc.setDrawColor(191, 219, 254);
+            doc.setLineWidth(0.4);
+            doc.roundedRect(margin, y, W - margin * 2, 14, 3, 3, 'FD');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(14, 46, 114);
+            doc.text('PATIENT ID', margin + 4, y + 5.5);
+            doc.setFont('courier', 'bold');
+            doc.setFontSize(13);
+            doc.setTextColor(14, 46, 114);
+            doc.text('{{ patient.patient_id }}', margin + 4, y + 11.5);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(100, 116, 139);
+            doc.text('{{ patient.full_name }}  |  {{ patient.gender }}, Age {{ patient.age }}  |  Blood: {{ patient.blood_group }}', W - margin - 4, y + 8.5, { align: 'right' });
+            y += 20;
+
+            // ── A. Personal Info ──────────────────────────────
+            sectionHeader('A.  Personal Information', 'Section A');
+            row('Full Name',      '{{ patient.full_name }}');
+            row('Date of Birth',  '{{ patient.date_of_birth|date:"F j, Y" }}');
+            row('Age',            '{{ patient.age }} years');
+            row('Gender',         '{{ patient.gender }}');
+            row('Blood Group',    '{{ patient.blood_group }}');
+            row('Marital Status', '{{ patient.marital_status }}');
+            y += 4;
+
+            // ── B. Contact Info ───────────────────────────────
+            sectionHeader('B.  Contact Information', 'Section B');
+            row('Mobile Number', '{{ patient.mobile_number }}');
+            row('Email',         '{{ patient.email }}');
+            {% if patient.alternate_contact %}row('Alternate Contact', '{{ patient.alternate_contact }}');{% endif %}
+            row('Full Address', '{{ patient.address }}');
+            row('PIN / City / State', '{{ patient.pin_code }}, {{ patient.city }}, {{ patient.state }}');
+            y += 4;
+
+            // ── C. Identification ─────────────────────────────
+            sectionHeader('C.  Identification & Insurance', 'Section C');
+            row('ID Type',            '{{ patient.id_type }}');
+            row('ID Number',          '{{ patient.id_number }}');
+            row('Insurance Provider', '{{ patient.insurance_provider }}');
+            row('Policy Number',      '{{ patient.insurance_policy_number|default:"—" }}');
+            y += 4;
+
+            {% if medical_history %}
+            // ── D. Medical Conditions ─────────────────────────
+            sectionHeader('D.  Medical Conditions', 'Section D');
+            const conditions = `{% if medical_history.medical_conditions %}{% for c in medical_history.medical_conditions %}{{ c }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}None recorded{% endif %}`;
+            textBlock('Conditions', conditions);
+            {% if medical_history.condition_details %}textBlock('Details', `{{ medical_history.condition_details|escapejs }}`);{% endif %}
+            y += 4;
+
+            // ── E. Medications ────────────────────────────────
+            sectionHeader('E.  Medications', 'Section E');
+            {% if medical_history.current_medications %}
+            // Table header
+            checkPageBreak(10);
+            doc.setFillColor(239, 246, 255);
+            doc.rect(margin, y, W - margin * 2, 7, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8.5);
+            doc.setTextColor(14, 46, 114);
+            const cols = [margin + 2, margin + 22, margin + 68, margin + 100, margin + 132];
+            ['#', 'Medication', 'Dosage', 'Frequency', 'Since'].forEach((h, i) => doc.text(h, cols[i], y + 5));
+            y += 8;
+            {% for med in medical_history.current_medications %}
+            checkPageBreak(7);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+            doc.setTextColor(15, 23, 42);
+            ['{{ forloop.counter }}', '{{ med.name|default:"—"|escapejs }}', '{{ med.dosage|default:"—"|escapejs }}', '{{ med.frequency|default:"—"|escapejs }}', '{{ med.since|default:"—"|escapejs }}'].forEach((v, i) => doc.text(v, cols[i], y + 4.5));
+            doc.setDrawColor(241, 245, 249);
+            doc.setLineWidth(0.2);
+            doc.line(margin, y + 6.5, W - margin, y + 6.5);
+            y += 7;
+            {% endfor %}
+            {% else %}
+            textBlock('Current Medications', 'None recorded');
+            {% endif %}
+            {% if medical_history.past_medications %}textBlock('Past Medications', `{{ medical_history.past_medications|escapejs }}`);{% endif %}
+            y += 4;
+
+            // ── F. Clinical History ───────────────────────────
+            sectionHeader('F.  Clinical History', 'Section F');
+            textBlock('Surgeries / Hospitalizations', `{{ medical_history.surgeries|default:"None recorded"|escapejs }}`);
+            textBlock('Known Allergies',              `{{ medical_history.allergies|default:"None recorded"|escapejs }}`);
+            textBlock('Family History',               `{{ medical_history.family_history|default:"None recorded"|escapejs }}`);
+            y += 4;
+
+            // ── G. Lifestyle ──────────────────────────────────
+            sectionHeader('G.  Lifestyle & Physical Measurements', 'Section G');
+            row('Smoking',   '{{ medical_history.smoking }}');
+            row('Alcohol',   '{{ medical_history.alcohol }}');
+            row('Exercise',  '{{ medical_history.exercise }}');
+            row('Height',    '{{ medical_history.height_cm }} cm');
+            row('Weight',    '{{ medical_history.weight_kg }} kg');
+            row('BMI',       '{{ medical_history.bmi|default:"—" }}');
+            y += 4;
+
+            // ── H. Consent ────────────────────────────────────
+            sectionHeader('H.  Consent & Declaration', 'Section H');
+            row('Accuracy Confirmation', '{{ medical_history.confirm_information|yesno:"Yes,No" }}');
+            row('Data Privacy Policy',   '{{ medical_history.agree_data_policy|yesno:"Agreed,Not agreed" }}');
+            row('Research Consent',      '{{ medical_history.agree_research|yesno:"Consented,Not consented" }}');
+            {% endif %}
+
+            // ── Footer on each page ───────────────────────────
+            const pageCount = doc.getNumberOfPages();
+            for (let p = 1; p <= pageCount; p++) {
+                doc.setPage(p);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8);
+                doc.setTextColor(148, 163, 184);
+                doc.text('Veris Hospital Management System  —  Confidential Patient Record', margin, 292);
+                doc.text(`Page ${p} of ${pageCount}`, W - margin, 292, { align: 'right' });
+                doc.setDrawColor(220, 224, 232);
+                doc.setLineWidth(0.3);
+                doc.line(margin, 289, W - margin, 289);
+            }
+
+            doc.save('Patient_{{ patient.patient_id }}_Record.pdf');
+        } catch (e) {
+            console.error(e);
+            alert('PDF generation failed. Please try again.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download PDF';
+        }
+    }
+</script>
+{% endblock %}

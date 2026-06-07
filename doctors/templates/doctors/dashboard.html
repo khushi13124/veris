@@ -1,0 +1,1054 @@
+{% extends "accounts/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard — Dr. {{ doctor.full_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  background: #f8fafc !important;
+  font-family: 'Inter', sans-serif !important;
+  color: #0f172a !important;
+}
+nav { display: none !important; }
+main { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #eff6ff;
+  --primary-mid: #dbeafe;
+  --amber: #d97706;
+  --amber-light: #fef3c7;
+  --green: #16a34a;
+  --green-light: #f0fdf4;
+  --green-mid: #dcfce7;
+  --rose: #e11d48;
+  --rose-light: #fff1f2;
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+  --white: #ffffff;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 4px 16px rgba(0,0,0,0.07);
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--slate-300); border-radius: 99px; }
+
+/* ── SHELL ── */
+.shell { display: flex; min-height: 100vh; }
+
+/* ══ SIDEBAR ══ */
+.sidebar {
+  width: 220px; flex-shrink: 0;
+  background: var(--white);
+  border-right: 1px solid var(--slate-200);
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh;
+  overflow-y: auto; z-index: 50;
+}
+
+.sb-profile {
+  padding: 1.5rem 1rem 1.2rem;
+  border-bottom: 1px solid var(--slate-200);
+  text-align: center;
+}
+.sb-avatar-wrap {
+  width: 68px; height: 68px; border-radius: 50%;
+  border: 2px solid var(--slate-200);
+  overflow: hidden; margin: 0 auto 0.75rem;
+  background: var(--primary-light);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.sb-avatar { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sb-avatar-ph {
+  font-size: 1.6rem; font-weight: 700;
+  color: var(--primary); line-height: 1;
+}
+.sb-online {
+  position: absolute; bottom: 2px; right: 2px;
+  width: 11px; height: 11px; border-radius: 50%;
+  background: #22c55e; border: 2px solid var(--white);
+}
+.sb-name { font-size: 0.875rem; font-weight: 600; color: var(--slate-800); margin-bottom: 0.25rem; }
+.sb-spec {
+  font-size: 0.65rem; font-weight: 600; color: var(--primary);
+  background: var(--primary-light); border: 1px solid var(--primary-mid);
+  display: inline-block; padding: 0.1rem 0.5rem; border-radius: 99px; margin-bottom: 0.2rem;
+}
+.sb-id { font-size: 0.62rem; color: var(--slate-400); margin-bottom: 0.9rem; }
+
+.sb-meta { text-align: left; }
+.sb-mrow {
+  display: flex; justify-content: space-between;
+  padding: 0.25rem 0; font-size: 0.65rem;
+  border-bottom: 1px solid var(--slate-100);
+}
+.sb-mrow:last-child { border-bottom: none; }
+.sb-mrow .k { color: var(--slate-400); font-weight: 500; }
+.sb-mrow .v { font-weight: 600; color: var(--slate-700); text-align: right; max-width: 60%; font-size: 0.63rem; }
+
+.sb-nav { flex: 1; padding: 0.75rem 0.5rem; }
+.sb-section-label {
+  font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--slate-400); font-weight: 600;
+  padding: 0.5rem 0.5rem 0.25rem;
+}
+.sb-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.45rem 0.65rem; border-radius: var(--radius-sm);
+  text-decoration: none; color: var(--slate-600);
+  font-size: 0.75rem; font-weight: 500; margin-bottom: 0.08rem;
+  transition: all 0.12s;
+}
+.sb-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+.sb-item:hover { background: var(--primary-light); color: var(--primary); }
+.sb-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+
+.sb-logout {
+  padding: 0.75rem 0.5rem;
+  border-top: 1px solid var(--slate-200);
+}
+.sb-logout-btn {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.45rem 0.65rem; border-radius: var(--radius-sm);
+  color: var(--rose); font-size: 0.75rem; font-weight: 500;
+  width: 100%; background: none; border: none; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: background 0.12s;
+}
+.sb-logout-btn svg { width: 15px; height: 15px; }
+.sb-logout-btn:hover { background: var(--rose-light); }
+
+/* ══ MAIN ══ */
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Topbar */
+.topbar {
+  background: var(--white); border-bottom: 1px solid var(--slate-200);
+  padding: 0.65rem 1.25rem; display: flex; align-items: center; gap: 0.75rem;
+  position: sticky; top: 0; z-index: 40;
+}
+.tb-greet { flex: 1; }
+.tb-greet h1 { font-size: 0.95rem; font-weight: 600; color: var(--slate-800); }
+.tb-greet p { font-size: 0.65rem; color: var(--slate-400); margin-top: 0.08rem; }
+.tb-actions { display: flex; align-items: center; gap: 0.5rem; }
+
+/* Live clock */
+#liveClock {
+  font-size: 0.7rem; font-weight: 700; color: var(--primary);
+  background: var(--primary-light); border: 1px solid var(--primary-mid);
+  padding: 0.25rem 0.6rem; border-radius: var(--radius-sm);
+  white-space: nowrap; font-variant-numeric: tabular-nums; letter-spacing: 0.03em;
+}
+
+/* Search */
+.search-wrap { position: relative; }
+.search-box {
+  display: flex; align-items: center; gap: 0.4rem;
+  background: var(--slate-50); border: 1px solid var(--slate-200);
+  border-radius: var(--radius-sm); padding: 0.32rem 0.65rem;
+  width: 210px; transition: all 0.16s;
+}
+.search-box:focus-within {
+  border-color: var(--primary); background: var(--white);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.08); width: 250px;
+}
+.search-box svg { width: 14px; height: 14px; color: var(--slate-400); flex-shrink: 0; }
+.search-box input {
+  border: none; background: transparent; outline: none;
+  font-size: 0.75rem; color: var(--slate-800); font-family: 'Inter', sans-serif; width: 100%;
+}
+.search-box input::placeholder { color: var(--slate-400); }
+
+.gs-dropdown {
+  position: absolute; top: calc(100% + 6px); left: 0; width: 300px;
+  background: var(--white); border: 1px solid var(--slate-200);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  z-index: 200; display: none; overflow: hidden;
+}
+.gs-dropdown.open { display: block; animation: dropIn 0.12s ease; }
+@keyframes dropIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.gsd-header {
+  padding: 0.4rem 0.7rem; font-size: 0.6rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--slate-400); font-weight: 600;
+  border-bottom: 1px solid var(--slate-100); background: var(--slate-50);
+  display: flex; justify-content: space-between;
+}
+.gsd-item {
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem;
+  text-decoration: none; color: inherit; border-bottom: 1px solid var(--slate-100); transition: background 0.1s;
+}
+.gsd-item:last-child { border-bottom: none; }
+.gsd-item:hover { background: var(--primary-light); }
+.gsd-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--primary-light); border: 1px solid var(--primary-mid);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 700; color: var(--primary); flex-shrink: 0;
+}
+.gsd-name { font-size: 0.76rem; font-weight: 600; color: var(--slate-800); }
+.gsd-name mark { background: #fef9c3; color: #713f12; border-radius: 2px; padding: 0 2px; font-style: normal; }
+.gsd-sub { font-size: 0.62rem; color: var(--slate-400); margin-top: 0.05rem; }
+.gsd-empty { padding: 1rem 0.7rem; font-size: 0.74rem; color: var(--slate-400); text-align: center; }
+
+/* Icon button */
+.tb-icon {
+  width: 32px; height: 32px; border-radius: var(--radius-sm);
+  background: var(--slate-50); border: 1px solid var(--slate-200);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.12s; position: relative;
+  text-decoration: none; color: var(--slate-500); flex-shrink: 0;
+}
+.tb-icon svg { width: 15px; height: 15px; }
+.tb-icon:hover { background: var(--primary-light); border-color: var(--primary-mid); color: var(--primary); }
+.notif-dot {
+  position: absolute; top: 5px; right: 5px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--rose); border: 1.5px solid var(--white);
+}
+
+/* ══ BODY WRAP ══ */
+.body-wrap { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+
+/* Centre content */
+.centre { flex: 1; min-width: 0; overflow-y: auto; padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 1rem; }
+
+/* ══ STAT CARDS ══ */
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+.stat-card {
+  background: var(--white); border: 1px solid var(--slate-200);
+  border-radius: var(--radius); padding: 0.9rem 1rem;
+  box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 0.75rem;
+  transition: box-shadow 0.14s, transform 0.14s;
+}
+.stat-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+.stat-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.stat-icon svg { width: 18px; height: 18px; }
+.si-blue { background: var(--primary-light); color: var(--primary); }
+.si-amber { background: var(--amber-light); color: var(--amber); }
+.si-green { background: var(--green-light); color: var(--green); }
+.stat-body .num {
+  font-size: 1.4rem; font-weight: 700; color: var(--slate-900);
+  line-height: 1; font-variant-numeric: tabular-nums;
+}
+.stat-body .lbl { font-size: 0.65rem; color: var(--slate-400); font-weight: 500; margin-top: 0.1rem; }
+.stat-pulse { width: 7px; height: 7px; border-radius: 50%; margin-left: auto; flex-shrink: 0; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+.stat-pulse { animation: blink 2s infinite; }
+.pulse-blue { background: var(--primary); }
+.pulse-amber { background: var(--amber); }
+.pulse-green { background: var(--green); }
+
+/* ══ SECTION LABEL ══ */
+.sec-label {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-size: 0.6rem; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--slate-400); font-weight: 600;
+}
+.sec-label::after { content: ''; flex: 1; height: 1px; background: var(--slate-200); }
+
+/* ══ CARD ══ */
+.card {
+  background: var(--white); border: 1px solid var(--slate-200);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 1rem;
+}
+.card-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; }
+.card-title { font-size: 0.75rem; font-weight: 600; color: var(--slate-700); }
+.card-meta { font-size: 0.65rem; color: var(--slate-400); }
+
+/* ══ CALENDAR ══ */
+.fc { font-size: 0.72rem !important; }
+.fc-toolbar-title { font-size: 0.82rem !important; font-weight: 600 !important; color: var(--slate-800) !important; }
+.fc-button {
+  font-size: 0.64rem !important; padding: 0.18rem 0.5rem !important;
+  background: var(--white) !important; border-color: var(--slate-200) !important;
+  color: var(--slate-600) !important; font-family: 'Inter', sans-serif !important;
+  box-shadow: none !important;
+}
+.fc-button:hover { background: var(--primary-light) !important; border-color: var(--primary-mid) !important; color: var(--primary) !important; }
+.fc-button-active { background: var(--primary) !important; border-color: var(--primary) !important; color: var(--white) !important; }
+.fc-event { font-size: 0.6rem !important; border-radius: 4px !important; border: none !important; padding: 1px 4px !important; }
+.fc-col-header-cell-cushion { font-size: 0.63rem; font-weight: 600; color: var(--slate-500); text-decoration: none !important; }
+.fc-daygrid-day-number { font-size: 0.65rem; color: var(--slate-500); text-decoration: none !important; }
+.fc-day-today { background: var(--primary-light) !important; }
+.fc-daygrid-day-top { justify-content: center; }
+
+/* ══ SCHEDULE LIST ══ */
+.sch-list { display: flex; flex-direction: column; gap: 0.3rem; }
+.sch-item {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm); border: 1px solid var(--slate-200);
+  border-left: 3px solid var(--slate-200);
+  text-decoration: none; color: inherit; transition: all 0.12s;
+  background: var(--slate-50);
+}
+.sch-item:hover { border-left-color: var(--primary); background: var(--primary-light); transform: translateX(2px); }
+.sch-item.current { border-left-color: var(--green); background: var(--green-light); border-color: #bbf7d0; border-left-width: 3px; }
+.sch-item.done { opacity: 0.5; }
+.sch-time { font-size: 0.64rem; color: var(--slate-400); min-width: 34px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.sch-av { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--slate-200); }
+.sch-av-ph {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--primary-light); border: 1px solid var(--primary-mid);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.66rem; color: var(--primary); font-weight: 700; flex-shrink: 0;
+}
+.sch-name { font-weight: 600; font-size: 0.75rem; color: var(--slate-800); }
+.sch-sub { font-size: 0.6rem; color: var(--slate-400); margin-top: 0.03rem; }
+.sch-status {
+  margin-left: auto; font-size: 0.58rem; padding: 0.1rem 0.45rem;
+  border-radius: 99px; font-weight: 600; white-space: nowrap; flex-shrink: 0;
+}
+.ss-waiting { background: var(--amber-light); color: var(--amber); border: 1px solid #fde68a; }
+.ss-active { background: var(--primary-mid); color: var(--primary-dark); border: 1px solid #93c5fd; }
+.ss-done { background: var(--green-mid); color: var(--green); border: 1px solid #bbf7d0; }
+.sch-empty { text-align: center; padding: 1.5rem; color: var(--slate-400); font-size: 0.74rem; }
+
+/* ══ RIGHT PANEL ══ */
+.right-panel {
+  width: 268px; flex-shrink: 0;
+  background: var(--white); border-left: 1px solid var(--slate-200);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* Panel tabs */
+.rp-tabs {
+  display: flex; border-bottom: 1px solid var(--slate-200);
+  background: var(--slate-50); flex-shrink: 0;
+}
+.rp-tab {
+  flex: 1; padding: 0.6rem 0.5rem; font-size: 0.68rem; font-weight: 500;
+  color: var(--slate-500); border: none; background: none; cursor: pointer;
+  border-bottom: 2px solid transparent; font-family: 'Inter', sans-serif;
+  transition: all 0.12s; letter-spacing: 0.01em;
+}
+.rp-tab.active { color: var(--primary); border-bottom-color: var(--primary); background: var(--white); font-weight: 600; }
+.rp-tab:hover:not(.active) { color: var(--slate-700); background: var(--slate-100); }
+
+/* Panel header */
+.rp-head {
+  padding: 0.65rem 0.85rem 0.5rem;
+  border-bottom: 1px solid var(--slate-100);
+  background: linear-gradient(135deg, var(--primary-light), #fafbff);
+  flex-shrink: 0;
+}
+.rp-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.3rem; }
+.rp-title { font-size: 0.8rem; font-weight: 700; color: var(--slate-800); }
+.rp-chips { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+.rp-chip { font-size: 0.58rem; padding: 0.1rem 0.44rem; border-radius: 99px; font-weight: 600; }
+.chip-blue { background: var(--primary-mid); color: var(--primary-dark); border: 1px solid #93c5fd; }
+.chip-amber { background: var(--amber-light); color: var(--amber); border: 1px solid #fde68a; }
+
+.rp-live-bar {
+  padding: 0.28rem 0.85rem; border-bottom: 1px solid var(--slate-100);
+  font-size: 0.6rem; color: var(--slate-400); background: var(--slate-50);
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display: inline-block; margin-right: 0.25rem; }
+@keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+.live-dot { animation: livePulse 2s infinite; }
+
+/* Tab panes */
+.rp-pane { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+.rp-pane.active { display: flex; }
+.rp-body { flex: 1; overflow-y: auto; padding: 0.45rem 0.45rem; }
+.rp-footer { padding: 0.38rem 0.85rem; border-top: 1px solid var(--slate-100); font-size: 0.6rem; color: var(--slate-400); text-align: center; flex-shrink: 0; background: var(--slate-50); }
+
+/* Queue card */
+.q-card {
+  background: var(--slate-50); border: 1px solid var(--slate-200);
+  border-radius: var(--radius-sm); padding: 0.6rem 0.65rem;
+  margin-bottom: 0.3rem; cursor: pointer; transition: all 0.13s;
+  border-left: 3px solid var(--slate-200);
+  text-decoration: none; color: inherit;
+  animation: slideIn 0.2s ease both;
+}
+@keyframes slideIn { from { opacity: 0; transform: translateX(6px); } to { opacity: 1; transform: translateX(0); } }
+.q-card:hover { border-color: var(--primary-mid); border-left-color: var(--primary); background: var(--primary-light); transform: translateX(-2px); box-shadow: var(--shadow-sm); }
+.q-card.s-waiting { border-left-color: var(--amber); }
+.q-card.s-with_doctor { border-left-color: var(--primary); background: var(--primary-light); border-color: var(--primary-mid); }
+
+.q-top { display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.3rem; }
+.q-av { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; object-fit: cover; border: 1px solid var(--slate-200); }
+.q-av-ph {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  background: var(--primary-light); border: 1px solid var(--primary-mid);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 700; color: var(--primary);
+}
+.q-info { flex: 1; min-width: 0; }
+.q-name { font-size: 0.75rem; font-weight: 600; color: var(--slate-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-pid { font-size: 0.58rem; color: var(--slate-400); margin-top: 0.02rem; }
+.q-token { font-size: 0.58rem; font-weight: 700; color: var(--white); background: var(--primary); padding: 0.1rem 0.38rem; border-radius: 99px; flex-shrink: 0; }
+.q-token.tok-with { background: var(--green); }
+
+.q-badges { display: flex; gap: 0.2rem; flex-wrap: wrap; margin-bottom: 0.3rem; }
+.q-badge { font-size: 0.57rem; font-weight: 600; padding: 0.08rem 0.38rem; border-radius: 99px; }
+.qb-waiting { background: var(--amber-light); color: var(--amber); border: 1px solid #fde68a; }
+.qb-with_doctor { background: var(--primary-mid); color: var(--primary-dark); border: 1px solid #93c5fd; }
+.q-wait { font-size: 0.57rem; color: var(--slate-400); margin-left: auto; }
+
+.q-actions { display: flex; gap: 0.25rem; }
+.q-btn {
+  flex: 1; font-size: 0.62rem; font-weight: 600;
+  padding: 0.24rem 0.36rem; border-radius: 6px; border: 1px solid;
+  cursor: pointer; text-align: center; transition: all 0.1s;
+  font-family: 'Inter', sans-serif; text-decoration: none; display: block;
+}
+.q-btn.primary { background: var(--primary); border-color: var(--primary); color: var(--white); }
+.q-btn.primary:hover { background: var(--primary-dark); }
+.q-btn.success { background: var(--green); border-color: var(--green); color: var(--white); }
+.q-btn.success:hover { background: #15803d; }
+.q-btn.ghost { background: transparent; border-color: var(--slate-300); color: var(--slate-600); }
+.q-btn.ghost:hover { background: var(--white); border-color: var(--primary-mid); color: var(--primary); }
+
+.q-empty { text-align: center; padding: 2.5rem 1rem; color: var(--slate-400); font-size: 0.74rem; }
+.q-empty svg { width: 36px; height: 36px; margin: 0 auto 0.6rem; display: block; color: var(--slate-300); }
+
+/* Patient list panel */
+.pt-search {
+  padding: 0.5rem 0.5rem 0.4rem; border-bottom: 1px solid var(--slate-100); flex-shrink: 0;
+}
+.pt-search input {
+  width: 100%; background: var(--slate-50); border: 1px solid var(--slate-200);
+  border-radius: var(--radius-sm); padding: 0.35rem 0.65rem;
+  font-size: 0.72rem; font-family: 'Inter', sans-serif; outline: none; color: var(--slate-800);
+  transition: border 0.12s;
+}
+.pt-search input:focus { border-color: var(--primary); background: var(--white); }
+.pt-search input::placeholder { color: var(--slate-400); }
+
+.pt-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 0.6rem; border-radius: var(--radius-sm); margin-bottom: 0.25rem;
+  text-decoration: none; color: inherit; transition: all 0.12s;
+  border: 1px solid transparent;
+}
+.pt-item:hover { background: var(--primary-light); border-color: var(--primary-mid); }
+.pt-av {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  background: var(--primary-light); border: 1px solid var(--primary-mid);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: 700; color: var(--primary); overflow: hidden;
+}
+.pt-av img { width: 100%; height: 100%; object-fit: cover; }
+.pt-info { flex: 1; min-width: 0; }
+.pt-name { font-size: 0.74rem; font-weight: 600; color: var(--slate-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt-sub { font-size: 0.6rem; color: var(--slate-400); margin-top: 0.03rem; }
+.pt-arrow { color: var(--slate-300); flex-shrink: 0; }
+.pt-arrow svg { width: 13px; height: 13px; }
+
+/* ══ SPINNER / TOAST ══ */
+.spinner {
+  display: inline-block; width: 12px; height: 12px;
+  border: 2px solid var(--slate-200); border-top-color: var(--primary);
+  border-radius: 50%; animation: spin 0.5s linear infinite;
+  margin-right: 0.3rem; vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#toastBox { position: fixed; top: 12px; right: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 0.4rem; pointer-events: none; }
+.toast {
+  background: var(--white); border: 1px solid var(--slate-200);
+  border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  padding: 0.6rem 0.85rem; font-size: 0.74rem; color: var(--slate-800);
+  display: flex; align-items: center; gap: 0.45rem;
+  animation: toastIn 0.2s ease; pointer-events: all;
+  min-width: 200px; max-width: 290px;
+}
+@keyframes toastIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: translateX(0); } }
+.toast.t-success { border-left: 3px solid var(--green); }
+.toast.t-info { border-left: 3px solid var(--primary); }
+.toast.t-warn { border-left: 3px solid var(--amber); }
+.toast.t-error { border-left: 3px solid var(--rose); }
+.toast-out { animation: toastOut 0.24s ease forwards; }
+@keyframes toastOut { to { opacity: 0; transform: translateX(14px); } }
+.toast-icon { width: 14px; height: 14px; flex-shrink: 0; }
+
+/* ══ RESPONSIVE ══ */
+@media (max-width: 1280px) { .right-panel { width: 245px; } }
+@media (max-width: 1060px) { .right-panel { display: none; } }
+@media (max-width: 768px) { .sidebar { width: 190px; } .centre { padding: 0.75rem; } }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.stat-card { animation: fadeUp 0.28s ease both; }
+.stat-card:nth-child(2) { animation-delay: 0.05s; }
+.stat-card:nth-child(3) { animation-delay: 0.1s; }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div id="toastBox"></div>
+
+<div class="shell">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar">
+    <div class="sb-profile">
+      <div class="sb-avatar-wrap">
+        {% if doctor.profile_photo %}
+          <img src="{{ doctor.profile_photo.url }}" class="sb-avatar" alt="Dr {{ doctor.full_name }}">
+        {% else %}
+          <div class="sb-avatar-ph">{{ doctor.full_name|first }}</div>
+        {% endif %}
+        <span class="sb-online"></span>
+      </div>
+      <div class="sb-name">Dr. {{ doctor.full_name }}</div>
+      <div class="sb-spec">{{ doctor.specialization|default:"General Physician" }}</div>
+      <div class="sb-id">{{ doctor.doctor_id }}</div>
+      <div class="sb-meta">
+        <div class="sb-mrow"><span class="k">Dept</span>    <span class="v">{{ doctor.department|default:"—" }}</span></div>
+        <div class="sb-mrow"><span class="k">Qual.</span>   <span class="v">{{ doctor.qualification|default:"—" }}</span></div>
+        <div class="sb-mrow"><span class="k">Exp.</span>    <span class="v">{{ doctor.years_of_experience }} yrs</span></div>
+        <div class="sb-mrow"><span class="k">Chamber</span> <span class="v">{{ doctor.chamber_number|default:"—" }}</span></div>
+        <div class="sb-mrow"><span class="k">Shift</span>   <span class="v">{{ doctor.shift_timings|default:"—" }}</span></div>
+        <div class="sb-mrow"><span class="k">Phone</span>   <span class="v">{{ doctor.contact_number|default:"—" }}</span></div>
+      </div>
+    </div>
+
+    <nav class="sb-nav">
+      <div class="sb-section-label">Main</div>
+      <a href="{% url 'doctor_dashboard' %}" class="sb-item active">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Dashboard
+      </a>
+      <a href="#calendarCard" class="sb-item">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        Calendar
+      </a>
+      <a href="#scheduleCard" class="sb-item">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Today's Schedule
+      </a>
+
+      <div class="sb-section-label" style="margin-top: 0.5rem;">Patients</div>
+      <a href="{% url 'register' %}" class="sb-item">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+        Register Patient
+      </a>
+      <a href="{% url 'visits:assign_visit' %}" class="sb-item">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        Check-in Patient
+      </a>
+
+      <div class="sb-section-label" style="margin-top: 0.5rem;">Account</div>
+      <a href="{% url 'edit_doctor_profile' %}" class="sb-item">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        My Profile
+      </a>
+    </nav>
+
+    <div class="sb-logout">
+      <form action="{% url 'doctor_logout' %}" method="post">
+        {% csrf_token %}
+        <button type="submit" class="sb-logout-btn">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          Logout
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="tb-greet">
+        <h1>
+          {% now "H" as h %}{% if h < "12" %}Good morning{% elif h < "17" %}Good afternoon{% else %}Good evening{% endif %},
+          Dr. {{ doctor.full_name|truncatewords:2 }}
+        </h1>
+        <p>{% now "l, d F Y" %} &middot; Clinical overview</p>
+      </div>
+      <div class="tb-actions">
+        <span id="liveClock">--:--:--</span>
+
+        <!-- Global Search -->
+        <div class="search-wrap">
+          <div class="search-box">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" id="globalSearch" placeholder="Search patient..." autocomplete="off">
+          </div>
+          <div class="gs-dropdown" id="gsDropdown">
+            <div class="gsd-header"><span>Patients</span><span id="gsdCount"></span></div>
+            <div id="gsdResults"></div>
+          </div>
+        </div>
+
+        <a href="{% url 'register' %}" class="tb-icon" title="Register patient">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        </a>
+        <div class="tb-icon" id="notifBtn" title="Notifications">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          {% if pending_reports %}<span class="notif-dot"></span>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="body-wrap">
+
+      <!-- Centre -->
+      <div class="centre">
+
+        <!-- Stat Cards -->
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-icon si-blue">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            </div>
+            <div class="stat-body">
+              <div class="num" id="lbWith">—</div>
+              <div class="lbl">With Doctor</div>
+            </div>
+            <div class="stat-pulse pulse-blue"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon si-amber">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div class="stat-body">
+              <div class="num" id="lbWaiting">—</div>
+              <div class="lbl">Waiting</div>
+            </div>
+            <div class="stat-pulse pulse-amber"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon si-green">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div class="stat-body">
+              <div class="num" id="lbDone">—</div>
+              <div class="lbl">Completed Today</div>
+            </div>
+            <div class="stat-pulse pulse-green"></div>
+          </div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="sec-label">Appointment Calendar</div>
+        <div class="card" id="calendarCard">
+          <div class="card-hd">
+            <span class="card-title">Monthly View</span>
+            <span class="card-meta">Click any event to open patient record</span>
+          </div>
+          <div id="dashCalendar"></div>
+        </div>
+
+        <!-- Today's Schedule -->
+        <div class="sec-label" id="scheduleCard">Today's Schedule</div>
+        <div class="card">
+          <div class="card-hd">
+            <span class="card-title">Visits</span>
+            <span class="card-meta" id="schedMeta">{% now "d M Y" %}</span>
+          </div>
+          <div class="sch-list" id="scheduleList">
+            {% if todays_visits %}
+              {% for v in todays_visits %}
+              <a href="{% url 'visits:patient_detail' v.patient.id %}" class="sch-item
+                {% if v.status == 'with_doctor' %}current{% elif v.status == 'done' %}done{% endif %}">
+                <span class="sch-time">{{ v.checked_in_at|time:"H:i"|default:"—" }}</span>
+                {% if v.patient.profile_photo %}
+                  <img src="{{ v.patient.profile_photo.url }}" class="sch-av" alt="{{ v.patient.full_name }}">
+                {% else %}
+                  <div class="sch-av-ph">{{ v.patient.full_name|first }}</div>
+                {% endif %}
+                <div style="flex:1;min-width:0">
+                  <div class="sch-name">{{ v.patient.full_name }}</div>
+                  <div class="sch-sub">{{ v.patient.patient_id }}</div>
+                </div>
+                {% if v.status == 'waiting' %}
+                  <span class="sch-status ss-waiting">Waiting</span>
+                {% elif v.status == 'with_doctor' %}
+                  <span class="sch-status ss-active">With Doctor</span>
+                {% else %}
+                  <span class="sch-status ss-done">Done</span>
+                {% endif %}
+              </a>
+              {% endfor %}
+            {% else %}
+              <div class="sch-empty">No visits today yet.</div>
+            {% endif %}
+          </div>
+        </div>
+
+      </div><!-- /centre -->
+
+      <!-- ═══ RIGHT PANEL ═══ -->
+      <aside class="right-panel">
+
+        <!-- Tabs -->
+        <div class="rp-tabs">
+          <button class="rp-tab active" onclick="switchTab('queue', this)">Live Queue</button>
+          <button class="rp-tab" onclick="switchTab('patients', this)">All Patients</button>
+        </div>
+
+        <!-- Queue Pane -->
+        <div class="rp-pane active" id="pane-queue">
+          <div class="rp-head">
+            <div class="rp-title-row">
+              <span class="rp-title">Live Queue</span>
+              <span style="font-size:0.62rem;color:var(--slate-400)">{% now "d M" %}</span>
+            </div>
+            <div class="rp-chips">
+              <span class="rp-chip chip-blue"  id="qcWith">— with dr.</span>
+              <span class="rp-chip chip-amber" id="qcWaiting">— waiting</span>
+            </div>
+          </div>
+          <div class="rp-live-bar">
+            <span><span class="live-dot"></span>Live · auto-refresh 10s</span>
+            <span id="qpTime">—</span>
+          </div>
+          <div class="rp-body" id="queueBody">
+            <div class="q-empty">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Loading queue...
+            </div>
+          </div>
+          <div class="rp-footer" id="queueFooter">Loading...</div>
+        </div>
+
+        <!-- Patients Pane -->
+        <div class="rp-pane" id="pane-patients">
+          <div class="pt-search">
+            <input type="text" id="ptPanelSearch" placeholder="Filter patients..." autocomplete="off">
+          </div>
+          <div class="rp-body" id="ptPanelBody">
+            <div class="q-empty">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              Loading patients...
+            </div>
+          </div>
+          <div class="rp-footer" id="ptPanelFooter">—</div>
+        </div>
+
+      </aside>
+
+    </div><!-- /body-wrap -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script>
+/* ── Utilities ── */
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function hl(t, q) { return q ? t.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<mark>$1</mark>') : t; }
+
+/* ── Toast ── */
+function showToast(msg, type='info', ms=3400) {
+  const iconSVG = {
+    success: `<svg class="toast-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+    warn:    `<svg class="toast-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`,
+    error:   `<svg class="toast-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+    info:    `<svg class="toast-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+  };
+  const t = document.createElement('div');
+  t.className = `toast t-${type}`;
+  t.innerHTML = `${iconSVG[type]||iconSVG.info}<span>${msg}</span>`;
+  document.getElementById('toastBox').appendChild(t);
+  setTimeout(() => { t.classList.add('toast-out'); setTimeout(() => t.remove(), 280); }, ms);
+}
+
+/* ── Clock ── */
+document.addEventListener('DOMContentLoaded', function() {
+  const el = document.getElementById('liveClock');
+  function u() {
+    const n = new Date();
+    el.textContent = [n.getHours(), n.getMinutes(), n.getSeconds()].map(v => String(v).padStart(2,'0')).join(':');
+  }
+  u(); setInterval(u, 1000);
+});
+
+/* ── FullCalendar ── */
+document.addEventListener('DOMContentLoaded', function() {
+  const raw = {{ calendar_events|safe }};
+  const cal = new FullCalendar.Calendar(document.getElementById('dashCalendar'), {
+    initialView: 'dayGridMonth',
+    height: 300,
+    headerToolbar: { left: 'prev,next', center: 'title', right: 'today,dayGridMonth,listWeek' },
+    events: raw.map(e => ({
+      title: e.title, date: e.date,
+      backgroundColor: e.color || '#2563eb',
+      borderColor: e.color || '#2563eb',
+      extendedProps: { pid: e.patient_id }
+    })),
+    eventClick: info => {
+      const pid = info.event.extendedProps.pid;
+      if (pid) window.location.href = `/visits/patient/${pid}/`;
+    }
+  });
+  cal.render();
+});
+
+/* ── Tab Switcher ── */
+function switchTab(name, btn) {
+  document.querySelectorAll('.rp-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.rp-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('pane-' + name).classList.add('active');
+  if (name === 'patients' && !ptLoaded) loadPatients();
+}
+
+/* ── Global Search ── */
+const SEARCH_URL = "{% url 'patients_search_json' %}";
+let gstimer = null;
+let gs, gsd, gsr, gsc;
+
+document.addEventListener('DOMContentLoaded', function() {
+  gs = document.getElementById('globalSearch');
+  gsd = document.getElementById('gsDropdown');
+  gsr = document.getElementById('gsdResults');
+  gsc = document.getElementById('gsdCount');
+
+  gs.addEventListener('input', function() {
+    const q = this.value.trim();
+    clearTimeout(gstimer);
+    if (!q) { gsd.classList.remove('open'); return; }
+    gstimer = setTimeout(() => doSearch(q), 220);
+  });
+  gs.addEventListener('keydown', e => { if (e.key === 'Escape') { gsd.classList.remove('open'); gs.value = ''; } });
+  document.addEventListener('click', e => { if (!gs.closest('.search-wrap').contains(e.target)) gsd.classList.remove('open'); });
+});
+
+function doSearch(q) {
+  gsc.textContent = '';
+  gsr.innerHTML = `<div class="gsd-empty"><span class="spinner"></span>Searching...</div>`;
+  gsd.classList.add('open');
+  fetch(`${SEARCH_URL}?q=${encodeURIComponent(q)}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(r => r.json())
+    .then(data => {
+      const pts = data.patients || [];
+      gsc.textContent = pts.length ? `${pts.length} found` : '';
+      if (!pts.length) { gsr.innerHTML = `<div class="gsd-empty">No patients found.</div>`; return; }
+      gsr.innerHTML = pts.map(p => `
+        <a href="${p.visit_url}" class="gsd-item">
+          <div class="gsd-avatar">${esc(p.name[0].toUpperCase())}</div>
+          <div>
+            <div class="gsd-name">${hl(esc(p.name), q)}</div>
+            <div class="gsd-sub">${esc(p.id)} &middot; ${p.age}y &middot; ${esc(p.gender)}</div>
+          </div>
+        </a>`).join('');
+    })
+    .catch(() => { gsr.innerHTML = `<div class="gsd-empty" style="color:var(--rose)">Search failed. Check URL config.</div>`; });
+}
+
+/* ── Queue ── */
+const QUEUE_URL = "{% url 'today_queue_json' %}";
+let prevDone = new Set();
+
+function timeAgo(ci) {
+  if (!ci) return '';
+  const d = Math.floor((Date.now() - new Date(ci)) / 60000);
+  if (d < 1) return 'just now';
+  if (d < 60) return `${d}m ago`;
+  return `${Math.floor(d/60)}h ${d%60}m`;
+}
+
+function statusBadge(s) {
+  return s === 'waiting'
+    ? `<span class="q-badge qb-waiting">Waiting</span>`
+    : `<span class="q-badge qb-with_doctor">With Doctor</span>`;
+}
+
+function renderQueue(data) {
+  const all = data.visits || [];
+  const withDoc = all.filter(v => v.status === 'with_doctor');
+  const waiting = all.filter(v => v.status === 'waiting');
+  const done = all.filter(v => v.status === 'done');
+
+  done.filter(v => !prevDone.has(v.visit_id))
+      .forEach(v => showToast(`${v.patient_name} visit completed`, 'success'));
+  prevDone = new Set(done.map(v => v.visit_id));
+
+  /* Update stat counters */
+  document.getElementById('lbWith').textContent = withDoc.length;
+  document.getElementById('lbWaiting').textContent = waiting.length;
+  document.getElementById('lbDone').textContent = done.length;
+
+  /* Update chips */
+  document.getElementById('qcWith').textContent = `${withDoc.length} with dr.`;
+  document.getElementById('qcWaiting').textContent = `${waiting.length} waiting`;
+  document.getElementById('qpTime').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  const body = document.getElementById('queueBody');
+  const footer = document.getElementById('queueFooter');
+
+  const active = [
+    ...withDoc.sort((a, b) => a.token - b.token),
+    ...waiting.sort((a, b) => a.token - b.token)
+  ];
+
+  if (!active.length) {
+    body.innerHTML = `<div class="q-empty">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Queue is clear!<br><span style="font-size:0.63rem;margin-top:0.3rem;display:block;color:var(--green)">${done.length} patient${done.length!==1?'s':''} seen today</span>
+    </div>`;
+    footer.textContent = `${done.length} completed · Queue clear`;
+    return;
+  }
+
+  body.innerHTML = active.map(v => {
+    const init = (v.patient_name || '?')[0].toUpperCase();
+    const photo = v.patient_photo
+      ? `<img src="${v.patient_photo}" class="q-av" alt="${esc(v.patient_name)}">`
+      : `<div class="q-av-ph">${init}</div>`;
+
+    const tokCls = v.status === 'with_doctor' ? 'tok-with' : '';
+    const waitInfo = v.status === 'waiting' ? `<span class="q-wait">${timeAgo(v.checked_in_at)}</span>` : '';
+
+    let actions = '';
+    if (v.status === 'waiting') {
+      actions = `<div class="q-actions">
+        <a href="${v.detail_url}" class="q-btn ghost" onclick="event.stopPropagation()">View</a>
+        <a href="${v.start_url}"  class="q-btn primary" onclick="event.stopPropagation()">Start</a>
+      </div>`;
+    } else if (v.status === 'with_doctor') {
+      actions = `<div class="q-actions">
+        <a href="${v.detail_url}"   class="q-btn ghost"   onclick="event.stopPropagation()">Record</a>
+        <a href="${v.complete_url}" class="q-btn success" onclick="event.stopPropagation()">Done</a>
+      </div>`;
+    }
+
+    return `<div class="q-card s-${v.status}" onclick="window.location='${v.detail_url}'">
+      <div class="q-top">
+        ${photo}
+        <div class="q-info">
+          <div class="q-name">${esc(v.patient_name)}</div>
+          <div class="q-pid">${esc(v.patient_id)}</div>
+        </div>
+        <span class="q-token ${tokCls}">#${v.token}</span>
+      </div>
+      <div class="q-badges">${statusBadge(v.status)}${waitInfo}</div>
+      ${actions}
+    </div>`;
+  }).join('');
+
+  footer.textContent = `${withDoc.length} with doctor · ${waiting.length} waiting · ${done.length} done`;
+}
+
+/* Schedule sync */
+function refreshSchedule() {
+  fetch(QUEUE_URL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(r => r.json())
+    .then(data => {
+      const visits = data.visits || [];
+      if (!visits.length) return;
+      document.querySelectorAll('#scheduleList .sch-item').forEach(item => {
+        const pidEl = item.querySelector('.sch-sub');
+        if (!pidEl) return;
+        const pid = pidEl.textContent.trim();
+        const m = visits.find(v => v.patient_id === pid);
+        if (!m) return;
+        item.classList.remove('current', 'done');
+        if (m.status === 'with_doctor') item.classList.add('current');
+        else if (m.status === 'done') item.classList.add('done');
+        const sb = item.querySelector('.sch-status');
+        if (sb) {
+          const map = { waiting: ['ss-waiting', 'Waiting'], with_doctor: ['ss-active', 'With Doctor'], done: ['ss-done', 'Done'] };
+          const [cls, txt] = map[m.status] || ['ss-waiting', 'Waiting'];
+          sb.className = `sch-status ${cls}`; sb.textContent = txt;
+        }
+      });
+    }).catch(() => {});
+}
+
+function loadQueue() {
+  fetch(QUEUE_URL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(r => r.json())
+    .then(data => { renderQueue(data); refreshSchedule(); })
+    .catch(() => {
+      document.getElementById('queueBody').innerHTML = `<div class="q-empty" style="color:var(--rose)">Could not load queue.</div>`;
+    });
+}
+
+/* ── Patient Panel ── */
+const PATIENTS_URL = "{% url 'patients_list_json' %}";
+var ptLoaded = false;
+var allPatients = [];
+
+function loadPatients() {
+  ptLoaded = true;
+  document.getElementById('ptPanelBody').innerHTML = `<div class="q-empty"><span class="spinner"></span>Loading...</div>`;
+  fetch(PATIENTS_URL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(r => r.json())
+    .then(data => {
+      allPatients = data.patients || [];
+      renderPatients(allPatients);
+      document.getElementById('ptPanelFooter').textContent = `${allPatients.length} patient${allPatients.length !== 1 ? 's' : ''}`;
+    })
+    .catch(() => {
+      document.getElementById('ptPanelBody').innerHTML = `<div class="q-empty" style="color:var(--rose)">Could not load patients.</div>`;
+    });
+}
+
+function renderPatients(pts) {
+  const body = document.getElementById('ptPanelBody');
+  if (!pts.length) {
+    body.innerHTML = `<div class="q-empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:36px;height:36px;margin:0 auto 0.5rem;display:block;color:var(--slate-300)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>No patients found.</div>`;
+    return;
+  }
+  body.innerHTML = pts.map(p => `
+    <a href="${p.visit_url}" class="pt-item">
+      <div class="pt-av">
+        ${p.photo ? `<img src="${p.photo}" alt="${esc(p.name)}">` : esc(p.name[0].toUpperCase())}
+      </div>
+      <div class="pt-info">
+        <div class="pt-name">${esc(p.name)}</div>
+        <div class="pt-sub">${esc(p.id)} &middot; ${p.age}y &middot; ${esc(p.gender)}</div>
+      </div>
+      <div class="pt-arrow"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
+    </a>`).join('');
+}
+
+/* Patient panel filter */
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('ptPanelSearch').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    if (!q) { renderPatients(allPatients); return; }
+    renderPatients(allPatients.filter(p =>
+      p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)
+    ));
+  });
+});
+
+/* ── Init ── */
+document.addEventListener('DOMContentLoaded', () => {
+  loadQueue();
+  setInterval(loadQueue, 10000);
+
+  document.getElementById('notifBtn')?.addEventListener('click', () => {
+    {% if pending_reports %}
+    showToast('{{ pending_reports }} pending report{{ pending_reports|pluralize }}.', 'warn');
+    {% else %}
+    showToast('No pending notifications.', 'info');
+    {% endif %}
+  });
+});
+</script>
+{% endblock %}

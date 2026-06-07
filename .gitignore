@@ -1,0 +1,12 @@
+db.sqlite3
+.env
+venv
+rsna/checkpoints/model1_best.pt
+rsna/checkpoints/model3_best.pt
+rsna/checkpoints/model2_best.pt
+rsna/checkpoints/model3_left_best.pt
+rsna/checkpoints/model3_right_best.pt
+rsna/checkpoints/model4_best.pt
+rsna/checkpoints/nfn_keypoint_offsets.json
+rsna/checkpoints/ss_axial_offsets.json
+rsna/checkpoints/temperature_scales.json

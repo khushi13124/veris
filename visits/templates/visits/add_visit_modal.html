@@ -1,0 +1,206 @@
+{% load static %}
+
+<style>
+  #addVisitModal {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.65);
+    backdrop-filter: blur(3px);
+    z-index: 1000;
+    align-items: center; justify-content: center;
+    padding: 1rem;
+  }
+  .avm-card {
+    background: #161b22; border: 1px solid #30363d; border-radius: 14px;
+    width: 100%; max-width: 580px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.6);
+    overflow: hidden; animation: slideUp .22s ease;
+    max-height: 90vh; display: flex; flex-direction: column;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(24px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  .avm-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.3rem; border-bottom: 1px solid #30363d;
+    background: #0d1117; flex-shrink: 0;
+  }
+  .avm-title { font-size: 1rem; font-weight: 700; color: #e6edf3; margin: 0; }
+  .avm-title span { color: #f0883e; }
+  .avm-actions { display: flex; gap: .5rem; }
+  .avm-icon-btn {
+    background: #21262d; border: 1px solid #30363d; color: #8b949e;
+    width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
+    font-size: .9rem; display: flex; align-items: center; justify-content: center;
+    transition: background .15s, color .15s;
+  }
+  .avm-icon-btn:hover { background: #30363d; color: #e6edf3; }
+
+  /* scrollable body */
+  #addVisitBody {
+    padding: 1.4rem 1.4rem 0;
+    overflow-y: auto; flex: 1;
+    scrollbar-width: thin; scrollbar-color: #30363d transparent;
+  }
+  #addVisitBody::-webkit-scrollbar { width: 4px; }
+  #addVisitBody::-webkit-scrollbar-thumb { background: #30363d; border-radius: 99px; }
+
+  .avm-date-badge {
+    display: inline-flex; align-items: center; gap: .4rem;
+    background: rgba(240,136,62,.12); color: #f0883e;
+    border: 1px solid rgba(240,136,62,.3); border-radius: 20px;
+    padding: .3rem .8rem; font-size: .8rem; font-weight: 600; margin-bottom: 1.2rem;
+  }
+  .avm-field { margin-bottom: 1rem; }
+  .avm-field label {
+    display: block; font-size: .78rem; text-transform: uppercase;
+    letter-spacing: .06em; color: #8b949e; margin-bottom: .4rem; font-weight: 600;
+  }
+  .avm-field textarea,
+  .avm-field input[type="date"],
+  .avm-field input[type="text"] {
+    width: 100%; background: #0d1117; border: 1px solid #30363d;
+    border-radius: 8px; color: #e6edf3; padding: .6rem .8rem;
+    font-size: .875rem; resize: vertical; transition: border-color .2s;
+    box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .avm-field textarea:focus,
+  .avm-field input:focus { outline: none; border-color: #f0883e; }
+  .avm-field textarea { min-height: 70px; }
+
+  .avm-ai-section {
+    border-top: 1px dashed #30363d; padding: .9rem 0 .2rem; margin-top: .5rem;
+  }
+  .avm-ai-label {
+    font-size: .75rem; color: #8b949e; text-transform: uppercase;
+    letter-spacing: .07em; font-weight: 700; margin-bottom: .7rem;
+  }
+  .avm-ai-btns { display: flex; gap: .75rem; flex-wrap: wrap; }
+  .btn-ai {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .5rem 1rem; border-radius: 8px; font-size: .82rem; font-weight: 700;
+    border: 1px solid; cursor: pointer; text-decoration: none;
+    transition: opacity .2s, transform .1s; font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .btn-ai:hover  { opacity: .82; transform: translateY(-1px); }
+  .btn-ai:active { transform: translateY(0); }
+  .btn-ai.symcat {
+    background: rgba(63,185,80,.12); border-color: rgba(63,185,80,.4); color: #3fb950;
+  }
+  .btn-ai.rsna {
+    background: rgba(88,166,255,.12); border-color: rgba(88,166,255,.4); color: #58a6ff;
+  }
+  .btn-ai.optional-tag {
+    font-size: .68rem; background: #21262d; border-color: #30363d; color: #8b949e;
+    pointer-events: none; padding: .2rem .55rem; border-radius: 20px; align-self: center;
+  }
+  .avm-footer {
+    display: flex; justify-content: flex-end; gap: .65rem;
+    padding: 1.1rem 1.4rem; border-top: 1px solid #30363d;
+    background: #0d1117; flex-shrink: 0;
+  }
+  .btn-cancel {
+    background: transparent; border: 1px solid #30363d; color: #8b949e;
+    padding: .55rem 1.1rem; border-radius: 8px; font-size: .85rem; font-weight: 600;
+    cursor: pointer; transition: background .2s; font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .btn-cancel:hover { background: #21262d; color: #e6edf3; }
+  .btn-save {
+    background: #f0883e; border: none; color: #fff;
+    padding: .55rem 1.3rem; border-radius: 8px; font-size: .85rem; font-weight: 700;
+    cursor: pointer; transition: opacity .2s; font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .btn-save:hover { opacity: .88; }
+</style>
+
+
+<div id="addVisitModal" role="dialog" aria-modal="true" aria-labelledby="avm-title-text">
+  <div class="avm-card">
+
+    <!-- Header -->
+    <div class="avm-header">
+      <p class="avm-title" id="avm-title-text">
+        New Visit — <span>{{ patient.full_name }}</span>
+      </p>
+      <div class="avm-actions">
+        <button class="avm-icon-btn" title="Minimise" onclick="minimiseAddVisit()">—</button>
+        <button class="avm-icon-btn" title="Close"    onclick="closeAddVisit()">✕</button>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form method="post" action="{% url 'visits:add_visit' patient.id %}">
+      {% csrf_token %}
+
+      <div id="addVisitBody">
+
+        <div class="avm-date-badge">
+          📅 Today — <span id="avm-today-date">…</span>
+        </div>
+
+        <div class="avm-field">
+          <label for="avm-remarks">Remarks</label>
+          <textarea id="avm-remarks" name="remarks"
+            placeholder="Doctor's observations, patient complaints…"></textarea>
+        </div>
+
+        <div class="avm-field">
+          <label for="avm-medication">Medication Prescribed</label>
+          <textarea id="avm-medication" name="medication"
+            placeholder="Drug name · dosage · frequency…" style="min-height:56px;"></textarea>
+        </div>
+
+        <div class="avm-field">
+          <label for="avm-diagnosis">Diagnosis Notes</label>
+          <textarea id="avm-diagnosis" name="diagnosis_notes"
+            placeholder="Working diagnosis…" style="min-height:56px;"></textarea>
+        </div>
+
+        <div class="avm-field">
+          <label for="avm-next">Next Appointment</label>
+          <input type="date" id="avm-next" name="next_appointment">
+        </div>
+
+        <!-- Optional AI tools -->
+        <div class="avm-ai-section">
+          <div class="avm-ai-label">
+            ⚡ Optional AI Tools
+            <span class="btn-ai optional-tag">results saved to this visit</span>
+          </div>
+          <div class="avm-ai-btns">
+            {% url 'symcat:index' as symcat_url %}
+            {% if symcat_url %}
+            <a href="{{ symcat_url }}?visit_patient={{ patient.id }}"
+               class="btn-ai symcat" target="_blank">
+              🧬 Differential Diagnosis
+            </a>
+            {% endif %}
+
+            {% url 'rsna:index' as rsna_url %}
+            {% if rsna_url %}
+            <a href="{{ rsna_url }}?visit_patient={{ patient.id }}"
+               class="btn-ai rsna" target="_blank">
+              🩻 Imaging / RSNA
+              <span style="font-size:.65rem;opacity:.6;">future</span>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+
+      </div><!-- /#addVisitBody -->
+
+      <div class="avm-footer">
+        <button type="button" class="btn-cancel" onclick="closeAddVisit()">Cancel</button>
+        <button type="submit" class="btn-save">💾 Save Visit</button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+  document.getElementById('avm-today-date').textContent = new Date().toLocaleDateString(
+    'en-IN', { day: '2-digit', month: 'short', year: 'numeric' }
+  );
+</script>

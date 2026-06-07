@@ -1,0 +1,287 @@
+{% extends "accounts/base.html" %}
+{% load tz %}
+
+{% block title %}Today's Queue | Veris{% endblock %}
+
+{% block content %}
+<style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+        --primary:       #1d4ed8;
+        --primary-dark:  #0e2e72;
+        --primary-light: #eff6ff;
+        --primary-mid:   #bfdbfe;
+        --border:        #e2e8f0;
+        --text-dark:     #0f172a;
+        --text-mid:      #334155;
+        --text-muted:    #64748b;
+        --bg-page:       #f8fafc;
+        --bg-card:       #ffffff;
+        --waiting-bg:    #fffbeb;
+        --waiting-clr:   #b45309;
+        --waiting-bdr:   #fde68a;
+        --active-bg:     #eff6ff;
+        --active-clr:    #1d4ed8;
+        --active-bdr:    #bfdbfe;
+        --done-bg:       #f0fdf4;
+        --done-clr:      #16a34a;
+        --done-bdr:      #bbf7d0;
+    }
+
+    body { background: var(--bg-page); font-family: inherit; }
+
+    .page-header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    }
+    .page-header h1 { font-size: 22px; font-weight: 700; color: var(--text-dark); letter-spacing: -0.3px; }
+    .page-header p  { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    .live-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: var(--done-bg); border: 1px solid var(--done-bdr);
+        border-radius: 20px; padding: 5px 12px;
+        font-size: 12px; font-weight: 600; color: var(--done-clr);
+    }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--done-clr); animation: blink 1.4s infinite; }
+    @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+    .section-label { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .section-label h2 { font-size: 15px; font-weight: 700; color: var(--text-dark); }
+    .count-pill { border-radius: 20px; font-size: 11px; font-weight: 700; padding: 2px 10px; }
+    .count-pill.blue  { background: var(--primary-light); color: var(--primary); }
+    .count-pill.green { background: var(--done-bg); color: var(--done-clr); border: 1px solid var(--done-bdr); }
+
+    .table-card {
+        background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 14px; overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 32px;
+    }
+
+    .queue-table { width: 100%; border-collapse: collapse; }
+    .queue-table thead tr { background: #f8fafc; border-bottom: 2px solid var(--border); }
+    .queue-table thead th {
+        padding: 11px 16px; font-size: 11px; font-weight: 700;
+        color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; text-align: left;
+    }
+    .queue-table tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; }
+    .queue-table tbody tr:last-child { border-bottom: none; }
+    .queue-table tbody tr:hover { background: #f8fafc; }
+    .queue-table td { padding: 13px 16px; font-size: 13px; color: var(--text-mid); vertical-align: middle; }
+
+    .token-pill {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 30px; height: 30px; border-radius: 50%;
+        background: var(--primary-light); color: var(--primary-dark);
+        font-size: 13px; font-weight: 700;
+    }
+    .token-pill.done { background: var(--done-bg); color: var(--done-clr); }
+
+    .patient-name { font-weight: 600; color: var(--text-dark); font-size: 13px; }
+    .patient-sub  { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+    .badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .badge-waiting     { background: var(--waiting-bg); color: var(--waiting-clr); border: 1px solid var(--waiting-bdr); }
+    .badge-with-doctor { background: var(--active-bg);  color: var(--active-clr);  border: 1px solid var(--active-bdr); }
+    .badge-done        { background: var(--done-bg);    color: var(--done-clr);    border: 1px solid var(--done-bdr); }
+
+    .text-completed { font-size: 12px; color: var(--text-muted); }
+
+    .empty-state { padding: 44px 20px; text-align: center; color: var(--text-muted); font-size: 14px; }
+    .empty-state .icon { font-size: 34px; margin-bottom: 10px; }
+
+    .history-wrapper { display: flex; flex-direction: column; gap: 10px; }
+
+    .date-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+
+    .date-block-btn {
+        display: flex; align-items: center; justify-content: space-between;
+        width: 100%; padding: 14px 18px; background: var(--bg-card);
+        border: none; cursor: pointer; text-align: left;
+        transition: background 0.15s; font-family: inherit;
+    }
+    .date-block-btn:hover { background: #f8fafc; }
+
+    .date-block-left { display: flex; align-items: center; gap: 12px; }
+    .date-icon {
+        width: 36px; height: 36px; border-radius: 9px;
+        background: var(--done-bg); border: 1px solid var(--done-bdr);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 17px; flex-shrink: 0;
+    }
+    .date-title { font-size: 14px; font-weight: 600; color: var(--text-dark); }
+    .date-sub   { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+    .date-block-right { display: flex; align-items: center; gap: 10px; }
+    .chevron { color: var(--text-muted); font-size: 12px; transition: transform 0.25s; }
+    .date-block.open .chevron { transform: rotate(180deg); }
+    .date-block-body { display: none; border-top: 1px solid var(--border); }
+    .date-block.open .date-block-body { display: block; }
+
+    .refresh-note { font-size: 12px; color: var(--text-muted); text-align: right; margin-bottom: 18px; }
+    .refresh-note a { color: var(--primary); text-decoration: none; font-weight: 500; }
+    .refresh-note a:hover { text-decoration: underline; }
+
+    @media (max-width: 680px) {
+        .queue-table th:nth-child(3), .queue-table td:nth-child(3),
+        .queue-table th:nth-child(5), .queue-table td:nth-child(5) { display: none; }
+    }
+</style>
+
+<div class="page-header">
+    <div>
+        <h1>Today's Queue</h1>
+        <p>{{ today|date:"l, d F Y" }}</p>
+    </div>
+</div>
+
+<div class="refresh-note"><a href="">↺ Refresh now</a></div>
+
+<!-- ═══════════════════════════════
+     PART 1 — ACTIVE QUEUE
+     ═══════════════════════════════ -->
+<div class="section-label">
+    <h2>Active Queue</h2>
+    <span class="count-pill blue">{{ active_count }} active</span>
+</div>
+
+<div class="table-card">
+    {% if active_visits %}
+    <table class="queue-table">
+        <thead>
+            <tr>
+                <th>#</th><th>Patient</th><th>Doctor</th><th>Status</th><th>Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for v in active_visits %}
+            <tr>
+                <td><span class="token-pill">{{ v.token }}</span></td>
+                <td>
+                    <div class="patient-name">{{ v.patient.full_name }}</div>
+                    <div class="patient-sub">{{ v.patient.patient_id }}</div>
+                </td>
+                <td>Dr. {{ v.doctor.full_name|title }}</td>
+                <td>
+                    {% if v.status == 'waiting' %}
+                        <span class="badge badge-waiting"><span class="badge-dot"></span>Waiting</span>
+                    {% elif v.status == 'with_doctor' %}
+                        <span class="badge badge-with-doctor"><span class="badge-dot"></span>With doctor</span>
+                    {% endif %}
+                </td>
+                <td style="color:var(--text-muted);">{{ v.checked_in_at|localtime|time:"g:i A" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="icon">🕐</div>
+        No active visits right now.
+    </div>
+    {% endif %}
+</div>
+
+
+<!-- ═══════════════════════════════
+     PART 2 — COMPLETED VISITS
+     ═══════════════════════════════ -->
+<div class="section-label">
+    <h2>Completed Visits</h2>
+    <span class="count-pill green">by date</span>
+</div>
+
+<div class="history-wrapper">
+
+    {% if done_today %}
+    <div class="date-block open" id="block-today">
+        <button class="date-block-btn" onclick="toggleBlock('block-today')">
+            <div class="date-block-left">
+                <div class="date-icon">📅</div>
+                <div>
+                    <div class="date-title">Today — {{ today|date:"d F Y" }}</div>
+                    <div class="date-sub">{{ done_today_count }} visit{{ done_today_count|pluralize }} completed</div>
+                </div>
+            </div>
+            <div class="date-block-right">
+                <span class="count-pill green">{{ done_today_count }}</span>
+                <span class="chevron">▼</span>
+            </div>
+        </button>
+        <div class="date-block-body">
+            <table class="queue-table">
+                <thead><tr><th>#</th><th>Patient</th><th>Doctor</th><th>Status</th><th>Time</th></tr></thead>
+                <tbody>
+                    {% for v in done_today %}
+                    <tr>
+                        <td><span class="token-pill done">{{ v.token }}</span></td>
+                        <td>
+                            <div class="patient-name">{{ v.patient.full_name }}</div>
+                            <div class="patient-sub">{{ v.patient.patient_id }}</div>
+                        </td>
+                        <td>Dr. {{ v.doctor.full_name|title }}</td>
+                        <td><span class="badge badge-done"><span class="badge-dot"></span>Done</span></td>
+                        <td style="color:var(--text-muted);">{{ v.checked_in_at|localtime|time:"g:i A" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% for visit_date, visit_list in past_by_date %}
+    <div class="date-block" id="block-past-{{ forloop.counter }}">
+        <button class="date-block-btn" onclick="toggleBlock('block-past-{{ forloop.counter }}')">
+            <div class="date-block-left">
+                
+                <div>
+                    <div class="date-title">{{ visit_date|date:"l, d F Y" }}</div>
+                    <div class="date-sub">{{ visit_list|length }} visit{{ visit_list|length|pluralize }} completed</div>
+                </div>
+            </div>
+            <div class="date-block-right">
+                <span class="count-pill green">{{ visit_list|length }}</span>
+                <span class="chevron">▼</span>
+            </div>
+        </button>
+        <div class="date-block-body">
+            <table class="queue-table">
+                <thead><tr><th>#</th><th>Patient</th><th>Doctor</th><th>Status</th><th>Time</th></tr></thead>
+                <tbody>
+                    {% for v in visit_list %}
+                    <tr>
+                        <td><span class="token-pill done">{{ forloop.counter }}</span></td>
+                        <td>
+                            <div class="patient-name">{{ v.patient.full_name }}</div>
+                            <div class="patient-sub">{{ v.patient.patient_id }}</div>
+                        </td>
+                        <td>Dr. {{ v.doctor.full_name|title }}</td>
+                        <td><span class="badge badge-done"><span class="badge-dot"></span>Done</span></td>
+                        <td style="color:var(--text-muted);">{{ v.checked_in_at|localtime|time:"g:i A" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% empty %}
+        {% if not done_today %}
+        <div style="text-align:center;padding:32px;color:var(--text-muted);font-size:14px;">
+            <div style="font-size:30px;margin-bottom:8px;">✅</div>
+            No completed visits yet.
+        </div>
+        {% endif %}
+    {% endfor %}
+
+</div>
+
+<script>
+function toggleBlock(id) {
+    document.getElementById(id).classList.toggle('open');
+}
+setTimeout(function () { window.location.reload(); }, 30000);
+</script>
+
+{% endblock %}

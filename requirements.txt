@@ -1,0 +1,10 @@
+django
+numpy
+torch
+torchvision
+pydicom 
+pandas 
+opencv-python
+scipy
+pillow
+matplotlib

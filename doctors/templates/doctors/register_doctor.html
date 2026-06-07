@@ -1,0 +1,173 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}{% if edit_mode %}Edit Profile{% else %}Register Doctor{% endif %} | Veris{% endblock %}
+
+{% block content %}
+
+<div class="max-w-3xl mx-auto">
+
+    <!-- Header — centred to match patient registration -->
+    <div class="mb-8 text-center">
+        <h1 class="text-2xl font-bold text-slate-800">
+            {% if edit_mode %}Edit your profile{% else %}Register New Doctor{% endif %}
+        </h1>
+
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-8">
+        {% csrf_token %}
+
+        <!-- Section 1: Identity -->
+        <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <h2 class="text-base font-semibold text-slate-700 mb-5">Personal information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <!-- Full Name -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Full name</label>
+                    {{ form.full_name }}
+                    {% if form.full_name.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ form.full_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Profile Photo -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Profile photo</label>
+                    {% if edit_mode and form.instance.profile_photo %}
+                        <div class="flex items-center gap-4 mb-2">
+                            <img src="{{ form.instance.profile_photo.url }}"
+                                 class="w-16 h-16 rounded-full object-cover border border-slate-200"
+                                 alt="Current photo">
+                            <span class="text-xs text-slate-400">Current photo — upload a new one to replace</span>
+                        </div>
+                    {% endif %}
+                    {{ form.profile_photo }}
+                    {% if form.profile_photo.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ form.profile_photo.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Section 2: Professional -->
+        <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <h2 class="text-base font-semibold text-slate-700 mb-5">Professional details</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Specialization</label>
+                    {{ form.specialization }}
+                    {% if form.specialization.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ form.specialization.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Department</label>
+                    {{ form.department }}
+                    {% if form.department.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ form.department.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Qualification</label>
+                    {{ form.qualification }}
+                    {% if form.qualification.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ form.qualification.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Years of experience</label>
+                    {{ form.years_of_experience }}
+                    {% if form.years_of_experience.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ form.years_of_experience.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Bio</label>
+                    {{ form.bio }}
+                    {% if form.bio.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ form.bio.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Section 3: Contact -->
+        <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <h2 class="text-base font-semibold text-slate-700 mb-5">Contact information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Contact number</label>
+                    {{ form.contact_number }}
+                    {% if form.contact_number.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ form.contact_number.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Email address</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ form.email.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Section 4: Schedule -->
+        <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <h2 class="text-base font-semibold text-slate-700 mb-5">Schedule</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Chamber / room</label>
+                    {{ form.chamber_number }}
+                    {% if form.chamber_number.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ form.chamber_number.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Days available</label>
+                    {{ form.days_available }}
+                    {% if form.days_available.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ form.days_available.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Shift timings</label>
+                    {{ form.shift_timings }}
+                    {% if form.shift_timings.errors %}
+                        <p class="text-xs text-red-500 mt-1">{{ form.shift_timings.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="flex items-center justify-between pt-2">
+            <a href="{% url 'home' %}"
+               class="text-sm text-slate-500 hover:text-slate-700 transition">
+                ← Back to home
+            </a>
+            <button type="submit"
+                class="bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition">
+                {% if edit_mode %}Save changes{% else %}Register doctor{% endif %}
+            </button>
+        </div>
+
+    </form>
+</div>
+
+{% endblock %}

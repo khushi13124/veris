@@ -1,0 +1,113 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Veris{% endblock %}</title>
+     {% block extra_css %}{% endblock %}
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+{% block extra_js %}{% endblock %}
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+
+            <!-- App Name -->
+            <div class="flex items-center text-xl font-semibold text-primary">
+                <img src="{% static 'images/logo.png' %}" alt="Veris Logo" class="h-8 w-auto mr-3">
+                Veris
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="space-x-6 hidden md:flex text-sm font-medium items-center">
+                <a href="{% url 'home' %}" class="hover:text-primary transition">Home</a>
+                <a href="{% url 'register' %}" class="hover:text-primary transition">Patients</a>
+                {% if request.user.is_staff %}
+                <a href="{% url 'register_doctor' %}" class="hover:text-primary transition">Doctors</a>
+                {% endif %}
+                <a href="{% url 'visits:assign_visit' %}" class="hover:text-primary transition">Visits</a>
+                <a href="{% url 'visits:today_queue' %}" class="hover:text-primary transition">Queue</a>
+            </div>
+            <!-- Right: logged in user + logout -->
+            <div class="flex items-center gap-4">
+                <span class="text-xs text-slate-400 hidden md:block">
+                    Logged in as
+                    <span class="font-medium text-slate-600">{{ request.user.email }}</span>
+                </span>
+
+                {% if request.user.is_authenticated %}
+                    {% if request.user.is_staff %}
+                        <!-- Admin logout -->
+                        <form action="{% url 'logout' %}" method="post" class="inline">
+                            {% csrf_token %}
+                            <button type="submit"
+                                class="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 transition">
+                                Logout
+                            </button>
+                        </form>
+                    {% else %}
+                        <!-- Doctor logout -->
+                        <form action="{% url 'doctor_logout' %}" method="post" class="inline">
+                            {% csrf_token %}
+                            <button type="submit"
+                                class="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 transition">
+                                Logout
+                            </button>
+                        </form>
+                    {% endif %}
+                {% endif %}
+
+            </div>
+
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% if messages %}
+<div id="message-container" class="max-w-7xl mx-auto px-6 pt-4 transition-opacity duration-500">
+    {% for message in messages %}
+    <div class="mb-2 px-4 py-3 rounded-lg text-sm font-medium
+        {% if message.tags == 'error' %} bg-red-50 text-red-700 border border-red-200
+        {% elif message.tags == 'success' %} bg-green-50 text-green-700 border border-green-200
+        {% elif message.tags == 'warning' %} bg-yellow-50 text-yellow-700 border border-yellow-200
+        {% else %} bg-blue-50 text-blue-700 border border-blue-200
+        {% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+  setTimeout(function () {
+    const container = document.getElementById('message-container');
+    if (container) {
+      container.style.opacity = '0';
+      setTimeout(() => container.remove(), 500);
+    }
+  }, 2500); // disappears after 2.5 sec
+</script>
+{% endif %}
+
+    <!-- Page Content -->
+    <main class="max-w-7xl mx-auto px-6 py-10">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+</body>
+</html>

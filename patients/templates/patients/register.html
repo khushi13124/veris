@@ -1,0 +1,549 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Patient Registration | Veris{% endblock %}
+
+{% block content %}
+<style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+        --primary:       #1d4ed8;
+        --primary-dark:  #0e2e72;
+        --primary-light: #eff6ff;
+        --primary-mid:   #bfdbfe;
+        --success:       #16a34a;
+        --success-light: #dcfce7;
+        --success-mid:   #bbf7d0;
+        --border:        #e2e8f0;
+        --text-dark:     #0f172a;
+        --text-mid:      #334155;
+        --text-muted:    #64748b;
+        --text-faint:    #94a3b8;
+        --bg-page:       #f8fafc;
+        --bg-card:       #ffffff;
+        --error:         #ef4444;
+        --error-light:   #fef2f2;
+    }
+
+    body { background: var(--bg-page); }
+
+    .page-header { text-align: center; margin-bottom: 30px; }
+    .page-header .logo { font-size: 28px; font-weight: 700; color: var(--text-dark); letter-spacing: -0.5px; }
+    .page-header .logo span { color: var(--primary); }
+    .page-header p { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+
+    .progress-wrapper { max-width: 960px; margin: 0 auto 28px auto; }
+    .progress-steps { display: flex; align-items: center; justify-content: center; }
+    .step { display: flex; flex-direction: column; align-items: center; position: relative; flex: 1; }
+    .step:not(:last-child)::after {
+        content: ''; position: absolute; top: 18px; left: 60%;
+        width: 80%; height: 3px; background: #d1d5db; z-index: 0;
+    }
+    .step.active:not(:last-child)::after { background: var(--primary-dark); }
+    .step-circle {
+        width: 38px; height: 38px; border-radius: 50%; background: #d1d5db;
+        color: #6b7280; display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 15px; z-index: 1;
+        border: 3px solid #fff; box-shadow: 0 0 0 2px #d1d5db; transition: all 0.3s;
+    }
+    .step.active .step-circle { background: var(--primary-dark); color: white; box-shadow: 0 0 0 3px var(--primary-mid); }
+    .step.done .step-circle { background: #10b981; color: white; box-shadow: 0 0 0 3px #a7f3d0; }
+    .step-label { font-size: 12px; color: #6b7280; margin-top: 6px; font-weight: 500; text-align: center; }
+    .step.active .step-label { color: var(--primary-dark); font-weight: 600; }
+
+    .reg-container {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        max-width: 1000px;
+        margin: 0 auto;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        overflow: hidden;
+        transition: 0.2s ease;
+    }
+    .reg-container:hover { box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+
+    .card-header {
+        background: var(--primary-dark);
+        padding: 28px 36px;
+        color: white;
+    }
+    .card-header h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+    .card-header p { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+
+    .form-body { padding: 32px 36px; background: var(--bg-card); }
+
+    .form-section { margin-bottom: 36px; }
+    .section-title {
+        display: flex; align-items: center; gap: 10px;
+        margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid var(--border);
+    }
+    .section-title h3 { font-size: 18px; font-weight: 600; color: var(--text-dark); }
+    .section-badge {
+        margin-left: auto; font-size: 11px; color: var(--text-muted);
+        background: #f3f4f6; padding: 3px 10px; border-radius: 20px;
+    }
+
+    .field-row { display: grid; gap: 18px; margin-bottom: 18px; }
+    .field-row.col-2 { grid-template-columns: 1fr 1fr; }
+    .field-row.col-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .field-row.col-1 { grid-template-columns: 1fr; }
+
+    .field-group { display: flex; flex-direction: column; }
+    .field-group label {
+        font-size: 13px; font-weight: 600; color: #374151;
+        margin-bottom: 6px; display: flex; align-items: center; gap: 4px;
+    }
+    .field-group label .required { color: var(--error); font-size: 12px; }
+    .field-group label .optional { font-size: 11px; color: #9ca3af; font-weight: 400; margin-left: 4px; }
+
+    .form-input,
+    input[type="text"], input[type="email"], input[type="number"], input[type="date"],
+    select, textarea {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        font-size: 14px;
+        background-color: #ffffff;
+        transition: 0.2s ease;
+        font-family: inherit;
+        color: var(--text-dark);
+    }
+    input:focus, select:focus, textarea:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(29,78,216,0.15);
+        outline: none;
+        background: #fff;
+    }
+    input[readonly], input[disabled] {
+        background-color: #f3f4f6 !important;
+        color: #6b7280;
+        cursor: not-allowed;
+    }
+
+    .error-summary {
+        background: var(--error-light); border: 2px solid var(--error);
+        border-radius: 10px; padding: 16px 20px; margin-bottom: 24px;
+    }
+    .error-summary-title { font-size: 14px; font-weight: 700; color: var(--error); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .error-summary ul { margin-left: 16px; color: #b91c1c; font-size: 13px; line-height: 1.8; }
+
+    .errorlist { list-style: none; padding: 0; margin: 5px 0 0 0; }
+    .errorlist li { font-size: 12px; color: var(--error); display: flex; align-items: center; gap: 4px; }
+    .errorlist li::before { content: '⚠ '; font-size: 11px; }
+
+    .field-group.has-error input,
+    .field-group.has-error select,
+    .field-group.has-error textarea { border-color: var(--error); background: #fff5f5; }
+
+    .help-text { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+    .info-box {
+        background: var(--primary-light); border: 1px solid var(--primary-mid);
+        border-radius: 8px; padding: 12px 16px; font-size: 13px;
+        color: #1e40af; margin-bottom: 24px; display: flex; align-items: center; gap: 8px;
+    }
+    .info-box::before { content: 'ℹ'; font-size: 14px; font-weight: 700; color: var(--primary); flex-shrink: 0; }
+
+    .id-hint-box {
+        display: none;
+        background: #f0fdf4; border: 1px solid #bbf7d0;
+        border-radius: 8px; padding: 10px 14px; margin-top: 6px;
+        font-size: 12px; color: #166534;
+    }
+    .id-hint-box.show { display: flex; align-items: center; gap: 6px; }
+    .id-hint-box .hint-icon { font-size: 14px; flex-shrink: 0; }
+
+    .form-footer {
+        padding: 20px 36px 28px; border-top: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: space-between; background: var(--bg-card);
+    }
+    .footer-note { font-size: 12px; color: #9ca3af; }
+    .footer-note span { color: var(--error); }
+
+    .btn-next {
+        display: inline-flex; align-items: center; gap: 8px;
+        background-color: var(--primary-dark); color: white;
+        border: 1px solid var(--primary-dark); padding: 12px 28px;
+        border-radius: 12px; font-size: 15px; font-weight: 600;
+        cursor: pointer; transition: 0.2s ease;
+    }
+    .btn-next:hover { background-color: var(--primary); }
+    .btn-next:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    .pin-loading { display: none; font-size: 11px; color: var(--primary); margin-top: 4px; }
+    .pin-loading.show { display: block; }
+
+    @media (max-width: 700px) {
+        .form-body { padding: 20px 18px; }
+        .card-header { padding: 20px 18px; }
+        .form-footer { padding: 16px 18px; flex-direction: column; gap: 14px; }
+        .field-row.col-2, .field-row.col-3 { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="page-header">
+    <div class="logo">Patient Registration</div>
+</div>
+
+<div class="progress-wrapper">
+    <div class="progress-steps">
+        <div class="step active">
+            <div class="step-circle">1</div>
+            <div class="step-label">Patient Info</div>
+        </div>
+        <div class="step">
+            <div class="step-circle">2</div>
+            <div class="step-label">Medical History</div>
+        </div>
+        <div class="step">
+            <div class="step-circle">3</div>
+            <div class="step-label">Complete</div>
+        </div>
+    </div>
+</div>
+
+<div class="reg-container">
+    <div class="card-header">
+        <h2>Step 1: Patient Registration</h2>
+        <p>Fill in the patient's personal, contact and identification details below.</p>
+    </div>
+
+    <form method="POST" action="" enctype="multipart/form-data" id="registerForm">
+        {% csrf_token %}
+        <div class="form-body">
+
+            {% if form.errors %}
+            <div class="error-summary">
+                <div class="error-summary-title">⚠ Please fix the following errors before continuing:</div>
+                <ul>
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <li><strong>{{ field }}:</strong> {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <div class="info-box">
+                All fields marked with <strong style="color:#ef4444;">&nbsp;*&nbsp;</strong> are required.
+                A unique Patient ID will be <strong>automatically assigned</strong> upon saving — no input needed.
+            </div>
+
+            <!-- SECTION A: PERSONAL INFO -->
+            <div class="form-section">
+                <div class="section-title">
+                    <h3>Personal Information</h3>
+                    <span class="section-badge">Section A</span>
+                </div>
+                <div class="field-row col-1">
+                    <div class="field-group {% if form.full_name.errors %}has-error{% endif %}">
+                        <label for="{{ form.full_name.id_for_label }}">Full Name <span class="required">*</span></label>
+                        {{ form.full_name }}
+                        {% if form.full_name.errors %}<ul class="errorlist">{% for e in form.full_name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                </div>
+                <div class="field-row col-1">
+                <div class="field-group {% if form.profile_photo.errors %}has-error{% endif %}">
+                    <label for="{{ form.profile_photo.id_for_label }}">
+                        Profile Photo <span class="optional">(optional)</span>
+                    </label>
+                    {{ form.profile_photo }}
+                    <div class="help-text">Upload patient photo (JPG, PNG)</div>
+                    {% if form.profile_photo.errors %}
+                        <ul class="errorlist">
+                            {% for e in form.profile_photo.errors %}
+                                <li>{{ e }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+                <div class="field-row col-2">
+                    <div class="field-group {% if form.date_of_birth.errors %}has-error{% endif %}">
+                        <label for="{{ form.date_of_birth.id_for_label }}">Date of Birth <span class="required">*</span></label>
+                        {{ form.date_of_birth }}
+                        {% if form.date_of_birth.errors %}<ul class="errorlist">{% for e in form.date_of_birth.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    <div class="field-group">
+                        <label for="id_age">Age <span class="optional">(auto-calculated)</span></label>
+                        {# Render age field manually to guarantee id="id_age" #}
+                        <input type="number" id="id_age" name="age"
+                               value="{{ form.age.value|default:'' }}"
+                               readonly class="form-input"
+                               placeholder="Auto-calculated">
+                        <div class="help-text">Calculated from date of birth</div>
+                    </div>
+                </div>
+                <div class="field-row col-1">
+                    <div class="field-group {% if form.gender.errors %}has-error{% endif %}">
+                        <label>Gender <span class="required">*</span></label>
+                        {{ form.gender }}
+                        {% if form.gender.errors %}<ul class="errorlist">{% for e in form.gender.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                </div>
+                <div class="field-row col-2">
+                    <div class="field-group {% if form.blood_group.errors %}has-error{% endif %}">
+                        <label for="{{ form.blood_group.id_for_label }}">Blood Group <span class="required">*</span></label>
+                        {{ form.blood_group }}
+                        {% if form.blood_group.errors %}<ul class="errorlist">{% for e in form.blood_group.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    <div class="field-group {% if form.marital_status.errors %}has-error{% endif %}">
+                        <label for="{{ form.marital_status.id_for_label }}">Marital Status <span class="required">*</span></label>
+                        {{ form.marital_status }}
+                        {% if form.marital_status.errors %}<ul class="errorlist">{% for e in form.marital_status.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION B: CONTACT INFO -->
+            <div class="form-section">
+                <div class="section-title">
+                    <h3>Contact Information</h3>
+                    <span class="section-badge">Section B</span>
+                </div>
+                <div class="field-row col-2">
+                    <div class="field-group {% if form.mobile_number.errors %}has-error{% endif %}">
+                        <label for="{{ form.mobile_number.id_for_label }}">Mobile Number <span class="required">*</span></label>
+                        {{ form.mobile_number }}
+                        {% if form.mobile_number.errors %}<ul class="errorlist">{% for e in form.mobile_number.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    <div class="field-group {% if form.email.errors %}has-error{% endif %}">
+                        <label for="{{ form.email.id_for_label }}">Email Address <span class="required">*</span></label>
+                        {{ form.email }}
+                        {% if form.email.errors %}<ul class="errorlist">{% for e in form.email.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                </div>
+                <div class="field-row col-1">
+                    <div class="field-group {% if form.alternate_contact.errors %}has-error{% endif %}">
+                        <label for="{{ form.alternate_contact.id_for_label }}">Alternate Contact <span class="optional">(optional)</span></label>
+                        {{ form.alternate_contact }}
+                        {% if form.alternate_contact.errors %}<ul class="errorlist">{% for e in form.alternate_contact.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                </div>
+                <div class="field-row col-1">
+                    <div class="field-group {% if form.address.errors %}has-error{% endif %}">
+                        <label for="{{ form.address.id_for_label }}">Full Address <span class="required">*</span></label>
+                        {{ form.address }}
+                        {% if form.address.errors %}<ul class="errorlist">{% for e in form.address.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                </div>
+                <div class="field-row col-3">
+                    <div class="field-group {% if form.pin_code.errors %}has-error{% endif %}">
+                        <label for="{{ form.pin_code.id_for_label }}">PIN Code <span class="required">*</span></label>
+                        {{ form.pin_code }}
+                        <div class="pin-loading" id="pin-loading">🔍 Fetching city/state...</div>
+                        {% if form.pin_code.errors %}<ul class="errorlist">{% for e in form.pin_code.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    <div class="field-group {% if form.city.errors %}has-error{% endif %}">
+                        <label for="{{ form.city.id_for_label }}">City <span class="required">*</span></label>
+                        {{ form.city }}
+                        {% if form.city.errors %}<ul class="errorlist">{% for e in form.city.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    <div class="field-group {% if form.state.errors %}has-error{% endif %}">
+                        <label for="{{ form.state.id_for_label }}">State <span class="required">*</span></label>
+                        {{ form.state }}
+                        {% if form.state.errors %}<ul class="errorlist">{% for e in form.state.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION C: IDENTIFICATION -->
+            <div class="form-section">
+                <div class="section-title">
+                    <h3>Identification &amp; Insurance</h3>
+                    <span class="section-badge">Section C</span>
+                </div>
+                <div class="field-row col-2">
+                    <div class="field-group {% if form.id_type.errors %}has-error{% endif %}">
+                        <label for="{{ form.id_type.id_for_label }}">ID Type <span class="required">*</span></label>
+                        {{ form.id_type }}
+                        {% if form.id_type.errors %}<ul class="errorlist">{% for e in form.id_type.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    <div class="field-group {% if form.id_number.errors %}has-error{% endif %}">
+                        <label for="{{ form.id_number.id_for_label }}">ID Number <span class="required">*</span></label>
+                        {{ form.id_number }}
+                        <div class="id-hint-box" id="id-hint-box">
+                            <span class="hint-icon">ℹ️</span>
+                            <span id="id-hint-text"></span>
+                        </div>
+                        {% if form.id_number.errors %}<ul class="errorlist">{% for e in form.id_number.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                </div>
+                <div class="field-row col-2">
+                    <div class="field-group {% if form.insurance_provider.errors %}has-error{% endif %}">
+                        <label for="{{ form.insurance_provider.id_for_label }}">Insurance Provider <span class="required">*</span></label>
+                        {{ form.insurance_provider }}
+                        {% if form.insurance_provider.errors %}<ul class="errorlist">{% for e in form.insurance_provider.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    <div class="field-group {% if form.insurance_policy_number.errors %}has-error{% endif %}">
+                        <label for="{{ form.insurance_policy_number.id_for_label }}">Policy Number <span class="optional">(if applicable)</span></label>
+                        {{ form.insurance_policy_number }}
+                        {% if form.insurance_policy_number.errors %}<ul class="errorlist">{% for e in form.insurance_policy_number.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /form-body -->
+
+        <div class="form-footer">
+            <div class="footer-note">Fields marked <span>*</span> are mandatory</div>
+            <button type="submit" class="btn-next" id="submitBtn">
+                Save &amp; Continue to Medical History
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    // ── Date parser — handles YYYY-MM-DD, DD-MM-YYYY, DD/MM/YYYY ─────────────
+    function parseDob(val) {
+        if (!val) return null;
+        var p, d;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+            p = val.split('-');
+            d = new Date(+p[0], +p[1] - 1, +p[2]);          // YYYY-MM-DD (browser native)
+        } else if (/^\d{2}-\d{2}-\d{4}$/.test(val)) {
+            p = val.split('-');
+            d = new Date(+p[2], +p[1] - 1, +p[0]);          // DD-MM-YYYY
+        } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
+            p = val.split('/');
+            d = new Date(+p[2], +p[1] - 1, +p[0]);          // DD/MM/YYYY
+        } else {
+            d = new Date(val);
+        }
+        return (d && !isNaN(d.getTime())) ? d : null;
+    }
+
+    function calculateAge(val) {
+        var dob = parseDob(val);
+        if (!dob) return '';
+        var today = new Date();
+        // ── KEY FIX: use strict > not >= so same-day DOB = age 0, not blank ──
+        if (dob > today) return 0;
+        var age = today.getFullYear() - dob.getFullYear();
+        var md  = today.getMonth() - dob.getMonth();
+        if (md < 0 || (md === 0 && today.getDate() < dob.getDate())) age--;
+        return Math.max(age, 0);
+    }
+
+    // ── Wire everything inside ONE DOMContentLoaded ───────────────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+
+        // 1. Age auto-calculate
+        var dobEl = document.getElementById('id_date_of_birth');
+        var ageEl = document.getElementById('id_age');
+
+        if (dobEl && ageEl) {
+            function syncAge() {
+                var age = calculateAge(dobEl.value);
+                ageEl.value = (age === '') ? '' : age;
+            }
+            syncAge();                                         // populate on load
+            dobEl.addEventListener('change', syncAge);
+            dobEl.addEventListener('input',  syncAge);
+        }
+
+        // 2. PIN → city/state
+        var pinEl      = document.getElementById('id_pin_code');
+        var pinLoading = document.getElementById('pin-loading');
+
+        if (pinEl) {
+            pinEl.addEventListener('blur', function () {
+                var pin = this.value.trim();
+                if (!/^\d{6}$/.test(pin)) return;
+                if (pinLoading) pinLoading.classList.add('show');
+                fetch('https://api.postalpincode.in/pincode/' + pin)
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (pinLoading) pinLoading.classList.remove('show');
+                        if (data[0] && data[0].Status === 'Success') {
+                            var po = data[0].PostOffice[0];
+                            var c  = document.getElementById('id_city');
+                            var s  = document.getElementById('id_state');
+                            if (c && !c.value) c.value = po.District;
+                            if (s && !s.value) s.value = po.State;
+                        }
+                    })
+                    .catch(function () {
+                        if (pinLoading) pinLoading.classList.remove('show');
+                    });
+            });
+        }
+
+        // 3. ID type hint + client-side validation
+        var ID_RULES = {
+            'Aadhar':   { pattern: /^\d{12}$/,                 hint: 'Aadhaar: 12 digits (e.g. 123456789012)',         ph: 'e.g. 123456789012' },
+            'PAN':      { pattern: /^[A-Z]{5}[0-9]{4}[A-Z]$/, hint: 'PAN: 10 chars — AAAAA9999A format',              ph: 'e.g. ABCDE1234F'   },
+            'Passport': { pattern: /^[A-Z][0-9]{7}$/,          hint: 'Passport: 1 letter + 7 digits (e.g. A1234567)', ph: 'e.g. A1234567'     },
+        };
+        var idType   = document.getElementById('id_id_type');
+        var idNum    = document.getElementById('id_id_number');
+        var hintBox  = document.getElementById('id-hint-box');
+        var hintText = document.getElementById('id-hint-text');
+
+        function showHint() {
+            var rule = idType ? ID_RULES[idType.value] : null;
+            if (rule && hintBox && hintText) {
+                hintText.textContent = rule.hint;
+                hintBox.classList.add('show');
+                if (idNum) idNum.placeholder = rule.ph;
+            } else if (hintBox) {
+                hintBox.classList.remove('show');
+            }
+        }
+
+        function validateId() {
+            if (!idType || !idNum) return true;
+            var rule = ID_RULES[idType.value];
+            if (!rule) return true;
+            var ok = rule.pattern.test(idNum.value.trim().replace(/\s/g, ''));
+            idNum.style.borderColor = ok ? '#10b981' : '#ef4444';
+            idNum.style.background  = ok ? '#f0fdf4' : '#fff5f5';
+            return ok;
+        }
+
+        if (idType)  { idType.addEventListener('change', showHint); showHint(); }
+        if (idNum)   { idNum.addEventListener('input', validateId); idNum.addEventListener('blur', validateId); }
+
+        // 4. Submit guard
+        var form      = document.getElementById('registerForm');
+        var submitBtn = document.getElementById('submitBtn');
+
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                if (!validateId()) {
+                    e.preventDefault();
+                    var rule = idType ? ID_RULES[idType.value] : null;
+                    if (rule) alert('Please enter a valid ' + (idType ? idType.value : 'ID') + ' number.\n' + rule.hint);
+                    if (idNum) idNum.focus();
+                    return;
+                }
+                if (submitBtn) {
+                    submitBtn.innerHTML = '⏳ Saving... Please wait';
+                    submitBtn.disabled  = true;
+                    setTimeout(function () {
+                        submitBtn.innerHTML = 'Save &amp; Continue to Medical History <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+                        submitBtn.disabled  = false;
+                    }, 3000);
+                }
+            });
+        }
+
+        // 5. Scroll to errors on load
+        var errBox = document.querySelector('.error-summary');
+        if (errBox) errBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    }); // ── end DOMContentLoaded
+
+}());
+</script>
+{% endblock %}

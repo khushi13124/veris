@@ -1,0 +1,227 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Home | Veris{% endblock %}
+
+{% block content %}
+
+<!-- Welcome Section -->
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-slate-800">
+        Welcome to the Veris
+    </h1>
+    <p class="mt-2 text-slate-600">
+        Manage patients, analyze medical data, and access intelligent diagnostic tools — all in one place.
+    </p>
+</div>
+
+<!-- Main Layout: Cards + Sidebar -->
+<div class="flex gap-8 items-start">
+
+    <!-- LEFT: 2-col Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
+
+        <!-- Card 1: Patients -->
+        <a href="{% url 'register' %}" class="block group">
+            <div class="bg-white border border-slate-200 rounded-xl p-8 shadow-sm hover:shadow-md transition cursor-pointer hover:border-primary h-full">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-5">
+                    <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-semibold text-primary mb-2">Patients</h2>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    Register patients, store medical history, and manage their complete profiles.
+                </p>
+                <div class="mt-6 text-primary text-sm font-medium flex items-center gap-1">
+                    Register a Patient
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            </div>
+        </a>
+
+        <!-- Card 2: Doctors -->
+        {% if request.user.is_staff %}
+        <a href="{% url 'register_doctor' %}" class="block group">
+        {% else %}
+        <a href="#" class="block group pointer-events-none opacity-60">
+        {% endif %}
+            <div class="bg-white border border-slate-200 rounded-xl p-8 shadow-sm hover:shadow-md transition cursor-pointer hover:border-primary h-full">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-5">
+                    <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-semibold text-primary mb-2">Doctors</h2>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    Register new doctors, manage credentials, and maintain the physician directory.
+                </p>
+                <div class="mt-6 text-primary text-sm font-medium flex items-center gap-1">
+                    Register a Doctor
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            </div>
+        </a>
+
+        <!-- Card 3: Add Visit -->
+        <a href="{% url 'visits:assign_visit' %}" class="block group">
+            <div class="bg-white border border-slate-200 rounded-xl p-8 shadow-sm hover:shadow-md transition cursor-pointer hover:border-primary h-full">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-5">
+                    <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-semibold text-primary mb-2">Add Visit</h2>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    Assign doctor and check-in patient for consultation and record the visit details.
+                </p>
+                <div class="mt-6 text-primary text-sm font-medium flex items-center gap-1">
+                    Assign a Visit
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            </div>
+        </a>
+
+        <!-- Card 4: Today's Queue -->
+        <a href="{% url 'visits:today_queue' %}" class="block group">
+            <div class="bg-white border border-slate-200 rounded-xl p-8 shadow-sm hover:shadow-md transition cursor-pointer hover:border-primary h-full">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-5">
+                    <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-semibold text-primary mb-2">Today's Queue</h2>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    View all patients currently waiting for consultation and track today's visit status.
+                </p>
+                <div class="mt-6 text-primary text-sm font-medium flex items-center gap-1">
+                    View Queue
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            </div>
+        </a>
+
+    </div>
+
+        <!-- RIGHT: Sidebar — matches full height of left grid -->
+    <div class="w-72 shrink-0 flex flex-col gap-5">
+
+        <!-- Quick Stats — flex-1 so it shares height equally -->
+        <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex-1 flex flex-col justify-between">
+            <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Quick Stats</h3>
+            <div class="space-y-4 flex-1 flex flex-col justify-center">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                        </div>
+                        <span class="text-sm text-slate-600">Total Patients</span>
+                    </div>
+                    <span class="text-sm font-semibold text-slate-800">{{ total_patients }}</span>
+                </div>
+                <div class="h-px bg-slate-100"></div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <span class="text-sm text-slate-600">Total Doctors</span>
+                    </div>
+                    <span class="text-sm font-semibold text-slate-800">{{ total_doctors }}</span>
+                </div>
+                <div class="h-px bg-slate-100"></div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </div>
+                        <span class="text-sm text-slate-600">In Queue Today</span>
+                    </div>
+                    <span class="text-sm font-semibold text-slate-800">{{ today_queue_count }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visits Chart — flex-1 to share height equally -->
+        <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex-1 flex flex-col">
+            <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-1">Visits — Last 7 Days</h3>
+            <p class="text-xs text-slate-400 mb-4">Daily patient visit count</p>
+
+            <!-- Chart area with Y-axis -->
+            <div class="flex gap-2 flex-1">
+
+                <!-- Y-axis labels -->
+                <div class="flex flex-col justify-between items-end pb-5 shrink-0">
+                    <span class="text-xs text-slate-400">{{ chart_max }}</span>
+                    <span class="text-xs text-slate-400">{% widthratio chart_max 4 3 %}</span>
+                    <span class="text-xs text-slate-400">{% widthratio chart_max 2 1 %}</span>
+                    <span class="text-xs text-slate-400">{% widthratio chart_max 4 1 %}</span>
+                    <span class="text-xs text-slate-400">0</span>
+                </div>
+
+                <!-- Bars + X-axis -->
+                <div class="flex-1 flex flex-col">
+                    <!-- Gridlines + Bars -->
+                    <div class="flex-1 relative">
+                        <!-- Horizontal grid lines -->
+                        <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                            <div class="border-t border-slate-100 w-full"></div>
+                            <div class="border-t border-slate-100 w-full"></div>
+                            <div class="border-t border-slate-100 w-full"></div>
+                            <div class="border-t border-slate-100 w-full"></div>
+                            <div class="border-t border-slate-200 w-full"></div>
+                        </div>
+
+                        <!-- Bars -->
+                        <div class="absolute inset-0 flex items-end gap-1 px-1">
+                            {% for day in last_7_days %}
+                            <div class="flex-1 flex flex-col items-center justify-end h-full group">
+                                <div class="relative w-full">
+                                    <!-- Tooltip -->
+                                    <div class="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs rounded px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10">
+                                        {{ day.count }} visit{{ day.count|pluralize }}
+                                    </div>
+                                </div>
+                                <div class="w-full rounded-t-sm bg-primary opacity-70 transition-all"
+                                     style="height: {% if chart_max > 0 %}{% widthratio day.count chart_max 100 %}%{% else %}0%{% endif %}; min-height: {% if day.count > 0 %}3px{% else %}0{% endif %};">
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- X-axis day labels -->
+                    <div class="flex gap-1 px-1 mt-1">
+                        {% for day in last_7_days %}
+                        <div class="flex-1 text-center">
+                            <span class="text-xs text-slate-400">{{ day.label }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

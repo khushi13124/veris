@@ -1,0 +1,67 @@
+{# visits/templates/visits/_ai_result_block.html #}
+{# Renders structured AI differential diagnosis stored as encoded text format #}
+{# Usage: {% include "visits/_ai_result_block.html" with ai_text=visit.ai_differential %} #}
+{% load ai_result_tags %}
+
+{% parse_ai_result ai_text as parsed %}
+
+{% if parsed %}
+<div class="ai-result-block">
+  <div class="ai-result-header">
+    <span class="ai-result-header-label">
+      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="display:inline;vertical-align:middle;margin-right:4px;">
+        <circle cx="6" cy="6" r="5" stroke="#7c3aed" stroke-width="1.5"/>
+        <path d="M4 6l1.5 1.5L8 4" stroke="#7c3aed" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      AI Differential Diagnosis
+    </span>
+  </div>
+
+  {% if parsed.symptoms %}
+  <div class="ai-symptoms-row">
+    <span class="ai-symp-label">Symptoms</span>
+    <div class="ai-symp-chips">
+      {% for s in parsed.symptoms %}
+      <span class="ai-symp-chip">{{ s }}</span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="ai-conditions-list">
+    {% for cond in parsed.conditions %}
+    <div class="ai-condition-item">
+      <div class="ai-condition-top">
+        <span class="ai-condition-name">{{ cond.name }}</span>
+        <div class="ai-condition-badges">
+          {% if cond.confidence %}<span class="ai-conf-badge">{{ cond.confidence }}% confidence</span>{% endif %}
+          {% if cond.completeness %}<span class="ai-complete-badge">{{ cond.completeness }}% match</span>{% endif %}
+        </div>
+      </div>
+      {% if cond.matched or cond.missing %}
+      <div class="ai-symptom-row-sm">
+        {% for s in cond.matched %}
+        <span class="ai-chip-sm ai-chip-matched">{{ s }}</span>
+        {% endfor %}
+        {% if cond.missing %}
+          <span class="ai-chip-label">missing:</span>
+          {% for s in cond.missing|slice:":4" %}
+          <span class="ai-chip-sm ai-chip-missing">{{ s }}</span>
+          {% endfor %}
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% elif ai_text %}
+{# Fallback: render plain-text for any legacy saved data #}
+<div class="ai-result-block">
+  <div class="ai-result-header">
+    <span class="ai-result-header-label">AI Differential Diagnosis</span>
+  </div>
+  <div style="padding:.7rem .9rem;font-size:.79rem;color:var(--ink2);line-height:1.6;white-space:pre-wrap;">{{ ai_text }}</div>
+</div>
+{% endif %}

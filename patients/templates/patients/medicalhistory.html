@@ -1,0 +1,727 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Medical History | Veris{% endblock %}
+
+{% block content %}
+<style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    .page-header { text-align: center; margin-bottom: 30px; }
+    .page-header .logo { font-size: 28px; font-weight: 700; color: #0e2e72; letter-spacing: -0.5px; }
+    .page-header p { color: #6b7280; font-size: 14px; margin-top: 4px; }
+
+    .progress-wrapper { max-width: 960px; margin: 0 auto 28px auto; }
+    .progress-steps { display: flex; align-items: center; justify-content: center; }
+    .step { display: flex; flex-direction: column; align-items: center; position: relative; flex: 1; }
+    .step:not(:last-child)::after {
+        content: ''; position: absolute; top: 18px; left: 60%;
+        width: 80%; height: 3px; background: #d1d5db; z-index: 0;
+    }
+    .step.done:not(:last-child)::after { background: #10b981; }
+    .step.active:not(:last-child)::after { background: #1a56db; }
+    .step-circle {
+        width: 38px; height: 38px; border-radius: 50%; background: #d1d5db;
+        color: #6b7280; display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 15px; z-index: 1;
+        border: 3px solid #fff; box-shadow: 0 0 0 2px #d1d5db;
+    }
+    .step.active .step-circle { background: #1a56db; color: white; box-shadow: 0 0 0 3px #bfdbfe; }
+    .step.done .step-circle { background: #10b981; color: white; box-shadow: 0 0 0 3px #a7f3d0; }
+    .step-label { font-size: 12px; color: #6b7280; margin-top: 6px; font-weight: 500; text-align: center; }
+    .step.active .step-label { color: #1a56db; font-weight: 600; }
+    .step.done .step-label { color: #10b981; font-weight: 600; }
+
+    .patient-banner {
+        max-width: 960px; margin: 0 auto 20px auto;
+        background-color: #0e2e72; border-radius: 12px; padding: 16px 24px;
+        display: flex; align-items: center; justify-content: space-between;
+        color: white; box-shadow: 0 4px 16px rgba(26,86,219,0.25);
+    }
+    .patient-banner .pat-info { display: flex; align-items: center; gap: 14px; }
+    .pat-avatar {
+        width: 46px; height: 46px; border-radius: 50%;
+        background: rgba(255,255,255,0.2); display: flex;
+        align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+    }
+    .pat-name { font-size: 17px; font-weight: 700; }
+    .pat-meta { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+    .pat-id-badge {
+        background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4);
+        padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;
+    }
+
+    /* ✅ Global error banner */
+    .global-error-banner {
+        max-width: 960px; margin: 0 auto 18px auto;
+        background: #fef2f2; border: 1.5px solid #fca5a5;
+        border-radius: 10px; padding: 14px 20px;
+        display: flex; align-items: flex-start; gap: 12px;
+    }
+    .global-error-banner .err-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .global-error-banner .err-body { flex: 1; }
+    .global-error-banner .err-title { font-size: 14px; font-weight: 700; color: #dc2626; margin-bottom: 6px; }
+    .global-error-banner ul { list-style: none; padding: 0; margin: 0; }
+    .global-error-banner ul li { font-size: 13px; color: #b91c1c; margin-bottom: 3px; }
+    .global-error-banner ul li::before { content: '• '; }
+
+    .med-container {
+        background: #ffffff; border-radius: 12px; max-width: 960px; margin: 0 auto;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06);
+        border: 1px solid #e2e8f0; overflow: hidden;
+    }
+    .card-header { background-color: #0e2e72; padding: 24px 36px; color: white; }
+    .card-header h2 { font-size: 22px; font-weight: 700; }
+    .card-header p { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+
+    .accordion-section { border-bottom: 1px solid #f3f4f6; }
+    .accordion-header {
+        padding: 18px 36px; cursor: pointer; display: flex; align-items: center;
+        gap: 14px; background: #ffffff; transition: background 0.2s; user-select: none;
+    }
+    .accordion-header:hover { background: #f8fafc; }
+    .accordion-header.open { background: #eff6ff; }
+    /* ✅ Section with errors gets a red tint */
+    .accordion-header.has-error { background: #fff5f5 !important; }
+    .accordion-header.has-error.open { background: #fff0f0 !important; }
+    .acc-title { flex: 1; }
+    .acc-title h3 { font-size: 15px; font-weight: 600; color: #1e293b; }
+    .acc-title p { font-size: 12px; color: #6b7280; margin-top: 2px; }
+    .acc-arrow { color: #6b7280; font-size: 18px; transition: transform 0.25s; }
+    .accordion-header.open .acc-arrow { transform: rotate(180deg); }
+    .acc-badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: #f3f4f6; color: #6b7280; font-weight: 500; }
+    .acc-badge.required-badge { background: #fef2f2; color: #ef4444; }
+    /* ✅ Error badge shown next to section with errors */
+    .acc-badge.error-badge { background: #fee2e2; color: #dc2626; }
+    .accordion-body { display: none; padding: 8px 36px 28px; background: #ffffff; }
+    .accordion-body.open { display: block; }
+
+    .field-row { display: grid; gap: 18px; margin-bottom: 18px; }
+    .field-row.col-2 { grid-template-columns: 1fr 1fr; }
+    .field-row.col-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .field-row.col-1 { grid-template-columns: 1fr; }
+
+    .field-group { display: flex; flex-direction: column; }
+    .field-group label { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+    .field-group label .required { color: #ef4444; }
+    .field-group label .optional { font-size: 11px; color: #9ca3af; font-weight: 400; }
+
+    .form-input,
+    input[type="text"], input[type="number"],
+    select, textarea {
+        width: 100%; padding: 10px 14px; border: 1.5px solid #d1d5db;
+        border-radius: 8px; font-size: 14px; color: #1f2937;
+        background: #fafafa; transition: all 0.2s; outline: none; font-family: inherit;
+    }
+    .form-input:focus, input[type="text"]:focus, input[type="number"]:focus,
+    select:focus, textarea:focus {
+        border-color: #1a56db; background: #ffffff; box-shadow: 0 0 0 3px rgba(26,86,219,0.08);
+    }
+    input[readonly] { background: #f3f4f6; color: #6b7280; cursor: not-allowed; }
+    textarea { resize: vertical; min-height: 90px; }
+
+    .conditions-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px; margin-top: 8px;
+    }
+    .condition-item {
+        display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+        border: 1.5px solid #e5e7eb; border-radius: 8px; cursor: pointer;
+        transition: all 0.2s; background: white;
+    }
+    .condition-item:hover { border-color: #1a56db; background: #eff6ff; }
+    .condition-item input[type="checkbox"] {
+        width: 16px; height: 16px; accent-color: #1a56db;
+        cursor: pointer; flex-shrink: 0; margin: 0; padding: 0;
+    }
+    .condition-item label { font-size: 13px; font-weight: 500; color: #374151; cursor: pointer; margin: 0; }
+    .condition-item:has(input:checked) { border-color: #1a56db; background: #eff6ff; }
+    .condition-item:has(input:checked) label { color: #1a56db; }
+
+    .radio-pill-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+    .radio-pill-group label {
+        display: flex; align-items: center; gap: 7px; padding: 9px 18px;
+        border: 1.5px solid #d1d5db; border-radius: 8px; cursor: pointer;
+        font-size: 13px; font-weight: 500; color: #374151; background: #fafafa; transition: all 0.2s; margin: 0;
+    }
+    .radio-pill-group label:hover { border-color: #1a56db; background: #eff6ff; color: #1a56db; }
+    .radio-pill-group input[type="radio"] { width: 15px; height: 15px; accent-color: #1a56db; margin: 0; padding: 0; }
+
+    ul.radioselect { list-style: none; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+    ul.radioselect li { display: flex; }
+    ul.radioselect li label {
+        display: flex; align-items: center; gap: 7px; padding: 9px 18px;
+        border: 1.5px solid #d1d5db; border-radius: 8px; cursor: pointer;
+        font-size: 13px; font-weight: 500; color: #374151; background: #fafafa; transition: all 0.2s;
+    }
+    ul.radioselect li label:hover { border-color: #1a56db; background: #eff6ff; color: #1a56db; }
+
+    .medication-card {
+        background: #f8faff; border: 1.5px solid #e0eaff;
+        border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; position: relative;
+    }
+    .medication-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .medication-card-title { font-size: 13px; font-weight: 600; color: #1a56db; }
+    .btn-remove-med {
+        background: #fef2f2; border: 1px solid #fecaca; color: #ef4444;
+        padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-remove-med:hover { background: #fee2e2; }
+    .btn-add {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: #f0fdf4; border: 1.5px dashed #34d399; color: #059669;
+        padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+        cursor: pointer; transition: all 0.2s; margin-top: 8px;
+    }
+    .btn-add:hover { background: #dcfce7; border-color: #059669; }
+
+    .bmi-display {
+        background: #f0f9ff; border: 1.5px solid #bae6fd;
+        border-radius: 10px; padding: 14px 18px; margin-top: 14px;
+        display: flex; align-items: center; gap: 14px;
+    }
+    .bmi-value { font-size: 28px; font-weight: 800; color: #0ea5e9; }
+    .bmi-category { font-size: 13px; font-weight: 600; color: #374151; }
+    .bmi-note { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+    .consent-item {
+        display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px;
+        border: 1.5px solid #e5e7eb; border-radius: 10px; margin-bottom: 12px;
+        cursor: pointer; transition: all 0.2s;
+    }
+    .consent-item:hover { border-color: #1a56db; background: #f8faff; }
+    .consent-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #1a56db; margin-top: 2px; flex-shrink: 0; cursor: pointer; }
+    .consent-text { flex: 1; }
+    .consent-text strong { font-size: 13px; color: #1e293b; display: block; margin-bottom: 2px; }
+    .consent-text span { font-size: 12px; color: #6b7280; }
+
+    .errorlist { list-style: none; padding: 0; margin: 5px 0 0 0; }
+    .errorlist li { font-size: 12px; color: #ef4444; }
+    .errorlist li::before { content: '⚠ '; }
+
+    .form-footer {
+        padding: 22px 36px; border-top: 1px solid #e2e8f0;
+        display: flex; align-items: center; justify-content: space-between; background: #fafafa;
+    }
+    .footer-note { font-size: 12px; color: #9ca3af; }
+
+    .btn-save {
+        display: inline-flex; align-items: center; gap: 8px;
+        background-color: #074663; color: white; border: none;
+        padding: 13px 36px; border-radius: 10px; font-size: 15px; font-weight: 600;
+        cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(5,150,105,0.3);
+    }
+    .btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(5,150,105,0.4); }
+    .btn-save:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-back {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: white; color: #6b7280; border: 1.5px solid #d1d5db;
+        padding: 11px 22px; border-radius: 10px; font-size: 14px; font-weight: 500;
+        cursor: pointer; transition: all 0.2s; text-decoration: none;
+    }
+    .btn-back:hover { border-color: #1a56db; color: #1a56db; background: #eff6ff; }
+
+    @media (max-width: 700px) {
+        .accordion-header, .accordion-body { padding-left: 18px; padding-right: 18px; }
+        .card-header { padding: 20px 18px; }
+        .form-footer { padding: 16px 18px; flex-direction: column; gap: 14px; }
+        .field-row.col-2, .field-row.col-3 { grid-template-columns: 1fr; }
+        .patient-banner { flex-direction: column; gap: 12px; align-items: flex-start; }
+    }
+</style>
+
+<!-- Header -->
+<div class="page-header">
+    <div class="logo">Patient Registeration</div>
+</div>
+
+<!-- Progress -->
+<div class="progress-wrapper">
+    <div class="progress-steps">
+        <div class="step done">
+            <div class="step-circle">✓</div>
+            <div class="step-label">Patient Info</div>
+        </div>
+        <div class="step active">
+            <div class="step-circle">2</div>
+            <div class="step-label">Medical History</div>
+        </div>
+        <div class="step">
+            <div class="step-circle">3</div>
+            <div class="step-label">Complete</div>
+        </div>
+    </div>
+</div>
+
+<!-- Patient Info Banner -->
+<div class="patient-banner">
+    <div class="pat-info">
+        <div>
+            <div class="pat-name">{{ patient.full_name }}</div>
+            <div class="pat-meta">
+                {{ patient.gender }} &nbsp;|&nbsp; Age: {{ patient.age }} &nbsp;|&nbsp;
+                Blood Group: {{ patient.blood_group }} &nbsp;|&nbsp; {{ patient.mobile_number }}
+            </div>
+        </div>
+    </div>
+    <div class="pat-id-badge">ID: {{ patient.patient_id }}</div>
+</div>
+
+<!-- ✅ Global error banner — only shows when form was submitted with errors -->
+{% if form.errors %}
+<div class="global-error-banner">
+    <div class="err-icon">⚠️</div>
+    <div class="err-body">
+        <div class="err-title">Please fix the following errors before saving:</div>
+        <ul>
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+<!-- Main Form Card -->
+<div class="med-container">
+    <div class="card-header">
+        <h2>🏥 Step 2: Medical History</h2>
+        <p>Click each section to expand and fill in details. All sections should be completed.</p>
+    </div>
+
+    <form method="POST" action="" id="medicalForm">
+        {% csrf_token %}
+        <input type="hidden" name="patient_id" value="{{ patient.id }}">
+
+        <!-- A. MEDICAL CONDITIONS -->
+        <div class="accordion-section">
+            <div class="accordion-header open" id="hdr-conditions" onclick="toggleSection(this, 'conditions')">
+                <div class="acc-title">
+                    <h3>A. Existing / Past Medical Conditions</h3>
+                    <p>Select all conditions that apply to the patient</p>
+                </div>
+                <span class="acc-badge required-badge">Required</span>
+                <span class="acc-arrow">▼</span>
+            </div>
+            <div class="accordion-body open" id="conditions">
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:13px; font-weight:600; color:#374151; display:block; margin-bottom:10px;">
+                        Select all applicable conditions: <span style="color:#ef4444;">*</span>
+                    </label>
+                    <div class="conditions-grid" id="conditions-grid-manual"></div>
+                </div>
+                <div class="field-row col-1">
+                    <div class="field-group">
+                        <label for="{{ form.condition_details.id_for_label }}">
+                            Condition Details <span class="optional">(describe each condition briefly)</span>
+                        </label>
+                        {{ form.condition_details }}
+                        {% if form.condition_details.errors %}<ul class="errorlist">{% for e in form.condition_details.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- B. CURRENT MEDICATIONS -->
+        <div class="accordion-section">
+            <div class="accordion-header" id="hdr-current_meds" onclick="toggleSection(this, 'current_meds')">
+                <div class="acc-title">
+                    <h3>B. Current Medications</h3>
+                    <p>List all medicines the patient is currently taking</p>
+                </div>
+                <span class="acc-badge">Optional</span>
+                <span class="acc-arrow">▼</span>
+            </div>
+            <div class="accordion-body" id="current_meds">
+                <div id="medications-container">
+                    <div class="medication-card" id="med-0">
+                        <div class="medication-card-header">
+                            <span class="medication-card-title">Medication #1</span>
+                            <button type="button" class="btn-remove-med" onclick="removeMedication(this)" style="display:none;">✕ Remove</button>
+                        </div>
+                        <div class="field-row col-2">
+                            <div class="field-group">
+                                <label>Medication Name</label>
+                                <input type="text" name="current_medications_name[]" placeholder="e.g. Metformin" class="form-input">
+                            </div>
+                            <div class="field-group">
+                                <label>Dosage</label>
+                                <input type="text" name="current_medications_dosage[]" placeholder="e.g. 500mg" class="form-input">
+                            </div>
+                        </div>
+                        <div class="field-row col-2">
+                            <div class="field-group">
+                                <label>Frequency</label>
+                                <input type="text" name="current_medications_frequency[]" placeholder="e.g. Twice daily" class="form-input">
+                            </div>
+                            <div class="field-group">
+                                <label>Taking Since</label>
+                                <input type="text" name="current_medications_since[]" placeholder="e.g. Jan 2022" class="form-input">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn-add" onclick="addMedication()">＋ Add Another Medication</button>
+            </div>
+        </div>
+
+        <!-- C. PAST MEDICATIONS -->
+        <div class="accordion-section">
+            <div class="accordion-header" id="hdr-past_meds" onclick="toggleSection(this, 'past_meds')">
+                <div class="acc-title">
+                    <h3>C. Past Medications</h3>
+                    <p>Medicines previously taken but discontinued</p>
+                </div>
+                <span class="acc-badge">Optional</span>
+                <span class="acc-arrow">▼</span>
+            </div>
+            <div class="accordion-body" id="past_meds">
+                <div class="field-group">
+                    <label for="{{ form.past_medications.id_for_label }}">Past Medications</label>
+                    {{ form.past_medications }}
+                    {% if form.past_medications.errors %}<ul class="errorlist">{% for e in form.past_medications.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- D. SURGERIES -->
+        <div class="accordion-section">
+            <div class="accordion-header" id="hdr-surgeries" onclick="toggleSection(this, 'surgeries')">
+                <div class="acc-title">
+                    <h3>D. Past Surgeries / Hospitalizations</h3>
+                    <p>Previous operations or major hospital stays</p>
+                </div>
+                <span class="acc-badge">Optional</span>
+                <span class="acc-arrow">▼</span>
+            </div>
+            <div class="accordion-body" id="surgeries">
+                <div class="field-group">
+                    <label for="{{ form.surgeries.id_for_label }}">Surgeries & Hospitalizations</label>
+                    {{ form.surgeries }}
+                    {% if form.surgeries.errors %}<ul class="errorlist">{% for e in form.surgeries.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- E. ALLERGIES -->
+        <div class="accordion-section">
+            <div class="accordion-header" id="hdr-allergies" onclick="toggleSection(this, 'allergies')">
+                <div class="acc-title">
+                    <h3>E. Allergies</h3>
+                    <p>Known allergies to medicines, food or environment</p>
+                </div>
+                <span class="acc-badge">Optional</span>
+                <span class="acc-arrow">▼</span>
+            </div>
+            <div class="accordion-body" id="allergies">
+                <div class="field-group">
+                    <label for="{{ form.allergies.id_for_label }}">Known Allergies</label>
+                    {{ form.allergies }}
+                    {% if form.allergies.errors %}<ul class="errorlist">{% for e in form.allergies.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- F. FAMILY HISTORY -->
+        <div class="accordion-section">
+            <div class="accordion-header" id="hdr-family" onclick="toggleSection(this, 'family')">
+                <div class="acc-title">
+                    <h3>F. Family Medical History</h3>
+                    <p>Hereditary conditions in immediate family members</p>
+                </div>
+                <span class="acc-badge">Optional</span>
+                <span class="acc-arrow">▼</span>
+            </div>
+            <div class="accordion-body" id="family">
+                <div class="field-group">
+                    <label for="{{ form.family_history.id_for_label }}">Family History</label>
+                    {{ form.family_history }}
+                    {% if form.family_history.errors %}<ul class="errorlist">{% for e in form.family_history.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- G. LIFESTYLE -->
+        <div class="accordion-section">
+            <div class="accordion-header" id="hdr-lifestyle" onclick="toggleSection(this, 'lifestyle')">
+                <div class="acc-title">
+                    <h3>G. Lifestyle & General Health</h3>
+                    <p>Daily habits and physical measurements</p>
+                </div>
+                <span class="acc-badge required-badge">Required</span>
+                <span class="acc-arrow">▼</span>
+            </div>
+            <div class="accordion-body" id="lifestyle">
+                <div style="margin-bottom:20px;">
+                    <label style="font-size:13px; font-weight:600; color:#374151; margin-bottom:8px; display:block;">
+                        Smoking Habit <span style="color:#ef4444;">*</span>
+                    </label>
+                    <div class="radio-pill-group">{{ form.smoking }}</div>
+                    {% if form.smoking.errors %}<ul class="errorlist">{% for e in form.smoking.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label style="font-size:13px; font-weight:600; color:#374151; margin-bottom:8px; display:block;">
+                        Alcohol Consumption <span style="color:#ef4444;">*</span>
+                    </label>
+                    <div class="radio-pill-group">{{ form.alcohol }}</div>
+                    {% if form.alcohol.errors %}<ul class="errorlist">{% for e in form.alcohol.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+                <div style="margin-bottom:24px;">
+                    <label style="font-size:13px; font-weight:600; color:#374151; margin-bottom:8px; display:block;">
+                        Exercise Frequency <span style="color:#ef4444;">*</span>
+                    </label>
+                    <div class="radio-pill-group">{{ form.exercise }}</div>
+                    {% if form.exercise.errors %}<ul class="errorlist">{% for e in form.exercise.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+                <div class="field-row col-3">
+                    <div class="field-group">
+                        <label for="id_height_cm">Height (cm) <span class="required" style="color:#ef4444;">*</span></label>
+                        <input type="number" id="id_height_cm" name="height_cm" step="0.1" placeholder="e.g. 170" class="form-input" value="{{ form.height_cm.value|default:'' }}">
+                        {% if form.height_cm.errors %}<ul class="errorlist">{% for e in form.height_cm.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    <div class="field-group">
+                        <label for="id_weight_kg">Weight (kg) <span class="required" style="color:#ef4444;">*</span></label>
+                        <input type="number" id="id_weight_kg" name="weight_kg" step="0.1" placeholder="e.g. 70" class="form-input" value="{{ form.weight_kg.value|default:'' }}">
+                        {% if form.weight_kg.errors %}<ul class="errorlist">{% for e in form.weight_kg.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    <div class="field-group">
+                        <label for="id_bmi">BMI <span class="optional">(auto-calculated)</span></label>
+                        <input type="number" id="id_bmi" name="bmi" step="0.01" placeholder="Auto-filled" class="form-input" readonly>
+                    </div>
+                </div>
+                <div class="bmi-display" id="bmi-display" style="display:none;">
+                    <div>
+                        <div class="bmi-value" id="bmi-value-display">--</div>
+                    </div>
+                    <div>
+                        <div class="bmi-category" id="bmi-category">--</div>
+                        <div class="bmi-note">Body Mass Index</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- H. CONSENT -->
+        <div class="accordion-section">
+            <div class="accordion-header" id="hdr-consent" onclick="toggleSection(this, 'consent')">
+                <div class="acc-title">
+                    <h3>H. Consent & Declaration</h3>
+                    <p>Patient must agree before saving the record</p>
+                </div>
+                <span class="acc-badge required-badge">Required</span>
+                <span class="acc-arrow">▼</span>
+            </div>
+            <div class="accordion-body" id="consent">
+                <label class="consent-item">
+                    {{ form.confirm_information }}
+                    <div class="consent-text">
+                        <strong>Accuracy Confirmation</strong>
+                        <span>I confirm that all the information provided above is accurate and complete to the best of my knowledge.</span>
+                    </div>
+                </label>
+                {% if form.confirm_information.errors %}<ul class="errorlist" style="margin-bottom:10px;">{% for e in form.confirm_information.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+
+                <label class="consent-item">
+                    {{ form.agree_data_policy }}
+                    <div class="consent-text">
+                        <strong>Data Privacy Policy</strong>
+                        <span>I agree that this information may be stored securely and used for medical purposes.</span>
+                    </div>
+                </label>
+                {% if form.agree_data_policy.errors %}<ul class="errorlist" style="margin-bottom:10px;">{% for e in form.agree_data_policy.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+
+                <label class="consent-item">
+                    {{ form.agree_research }}
+                    <div class="consent-text">
+                        <strong>Research Consent <span style="font-size:11px;font-weight:400;color:#9ca3af;">(Optional)</span></strong>
+                        <span>I consent to my anonymized data being used for medical research purposes.</span>
+                    </div>
+                </label>
+                {% if form.agree_research.errors %}<ul class="errorlist" style="margin-bottom:10px;">{% for e in form.agree_research.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="form-footer">
+            <a href="{% url 'register' %}" class="btn-back">← Back to Registration</a>
+            <button type="submit" class="btn-save" id="saveBtn">Save Medical History</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // ─── Accordion ────────────────────────────────────────────────
+    function toggleSection(header, bodyId) {
+        const body = document.getElementById(bodyId);
+        const isOpen = header.classList.contains('open');
+        header.classList.toggle('open', !isOpen);
+        body.classList.toggle('open', !isOpen);
+    }
+
+    // ✅ Auto-open accordion sections that have errors on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        // Map: body id → header id
+        const sectionMap = {
+            'conditions':  'hdr-conditions',
+            'current_meds':'hdr-current_meds',
+            'past_meds':   'hdr-past_meds',
+            'surgeries':   'hdr-surgeries',
+            'allergies':   'hdr-allergies',
+            'family':      'hdr-family',
+            'lifestyle':   'hdr-lifestyle',
+            'consent':     'hdr-consent',
+        };
+
+        Object.entries(sectionMap).forEach(([bodyId, headerId]) => {
+            const body   = document.getElementById(bodyId);
+            const header = document.getElementById(headerId);
+            if (!body || !header) return;
+
+            // Check if there are any error items inside this section
+            const hasErrors = body.querySelectorAll('.errorlist li').length > 0;
+            if (hasErrors) {
+                header.classList.add('open', 'has-error');
+                body.classList.add('open');
+
+                // Replace the existing badge with an error badge
+                const badge = header.querySelector('.acc-badge');
+                if (badge) {
+                    badge.classList.add('error-badge');
+                    badge.textContent = '⚠ Has errors';
+                }
+            }
+        });
+    });
+
+    // ─── Conditions Checkboxes ────────────────────────────────────
+    const conditionsList = [
+        'Diabetes', 'Hypertension', 'Heart Disease', 'Asthma',
+        'Thyroid Disorder', 'Kidney Disease', 'Liver Disease', 'Cancer',
+        'Stroke', 'Arthritis', 'Mental Health Disorders', 'Other', 'None'
+    ];
+
+    // ✅ Preserve checked state after form re-submission
+    const submittedConditions = new Set(
+        Array.from(document.querySelectorAll('input[name="medical_conditions"]')).map(i => i.value)
+    );
+
+    const gridEl = document.getElementById('conditions-grid-manual');
+    if (gridEl) {
+        // Remove any server-side hidden inputs (avoid duplicates)
+        document.querySelectorAll('input[name="medical_conditions"]').forEach(el => el.remove());
+
+        conditionsList.forEach(c => {
+            const item = document.createElement('label');
+            item.className = 'condition-item';
+            const checked = submittedConditions.has(c) ? 'checked' : '';
+            item.innerHTML = `
+                <input type="checkbox" name="medical_conditions" value="${c}" ${checked}>
+                <span style="font-size:13px;font-weight:500;color:#374151;">${c}</span>
+            `;
+            gridEl.appendChild(item);
+        });
+    }
+
+    // ─── Medications ──────────────────────────────────────────────
+    let medCount = 1;
+    function addMedication() {
+        medCount++;
+        const container = document.getElementById('medications-container');
+        const div = document.createElement('div');
+        div.className = 'medication-card';
+        div.innerHTML = `
+            <div class="medication-card-header">
+                <span class="medication-card-title">Medication #${medCount}</span>
+                <button type="button" class="btn-remove-med" onclick="removeMedication(this)">✕ Remove</button>
+            </div>
+            <div class="field-row col-2">
+                <div class="field-group">
+                    <label>Medication Name</label>
+                    <input type="text" name="current_medications_name[]" placeholder="e.g. Metformin" class="form-input">
+                </div>
+                <div class="field-group">
+                    <label>Dosage</label>
+                    <input type="text" name="current_medications_dosage[]" placeholder="e.g. 500mg" class="form-input">
+                </div>
+            </div>
+            <div class="field-row col-2">
+                <div class="field-group">
+                    <label>Frequency</label>
+                    <input type="text" name="current_medications_frequency[]" placeholder="e.g. Twice daily" class="form-input">
+                </div>
+                <div class="field-group">
+                    <label>Taking Since</label>
+                    <input type="text" name="current_medications_since[]" placeholder="e.g. Jan 2022" class="form-input">
+                </div>
+            </div>
+        `;
+        container.appendChild(div);
+        document.querySelectorAll('.btn-remove-med').forEach(b => b.style.display = 'inline-flex');
+    }
+
+    function removeMedication(btn) {
+        btn.closest('.medication-card').remove();
+        document.querySelectorAll('.medication-card-title').forEach((t, i) => {
+            t.textContent = `Medication #${i + 1}`;
+        });
+        const remaining = document.querySelectorAll('.medication-card');
+        if (remaining.length === 1) {
+            remaining[0].querySelector('.btn-remove-med').style.display = 'none';
+        }
+    }
+
+    // ─── BMI Calculator ───────────────────────────────────────────
+    const heightInput    = document.getElementById('id_height_cm');
+    const weightInput    = document.getElementById('id_weight_kg');
+    const bmiInput       = document.getElementById('id_bmi');
+    const bmiDisplay     = document.getElementById('bmi-display');
+    const bmiValueDisplay= document.getElementById('bmi-value-display');
+    const bmiCategory    = document.getElementById('bmi-category');
+
+    function getBMICategory(bmi) {
+        if (bmi < 18.5) return { text: 'Underweight',      color: '#f59e0b' };
+        if (bmi < 25)   return { text: 'Normal Weight ✓',  color: '#10b981' };
+        if (bmi < 30)   return { text: 'Overweight',       color: '#f97316' };
+        return             { text: 'Obese',             color: '#ef4444' };
+    }
+
+    function calcBMI() {
+        const h = parseFloat(heightInput.value);
+        const w = parseFloat(weightInput.value);
+        if (h > 0 && w > 0) {
+            const bmi = (w / ((h / 100) ** 2)).toFixed(2);
+            bmiInput.value = bmi;
+            const cat = getBMICategory(parseFloat(bmi));
+            bmiValueDisplay.textContent = bmi;
+            bmiValueDisplay.style.color = cat.color;
+            bmiCategory.textContent = cat.text;
+            bmiCategory.style.color = cat.color;
+            bmiDisplay.style.display = 'flex';
+        } else {
+            bmiDisplay.style.display = 'none';
+        }
+    }
+
+    if (heightInput) heightInput.addEventListener('input', calcBMI);
+    if (weightInput) weightInput.addEventListener('input', calcBMI);
+    calcBMI();
+
+    // ─── Submit button ────────────────────────────────────────────
+    // ✅ Re-enable button if page reloads with errors (browser back / validation fail)
+    document.getElementById('medicalForm').addEventListener('submit', function () {
+        const btn = document.getElementById('saveBtn');
+        btn.textContent = 'Saving...';
+        btn.disabled = true;
+
+        // Re-enable after 5s in case of server-side validation failure
+        setTimeout(() => {
+            btn.textContent = 'Save Medical History';
+            btn.disabled = false;
+        }, 5000);
+    });
+</script>
+{% endblock %}

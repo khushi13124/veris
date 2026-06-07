@@ -1,0 +1,591 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Symptom Checker | Veris{% endblock %}
+
+{% block extra_css %}
+<style>
+nav { display: none !important; }
+main { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  --bg: #f8fafc; --surface: #fff; --surface2: #f8fafc;
+  --border: #e2e8f0; --border2: #cbd5e1;
+  --blue: #2563eb; --blue-d: #1d4ed8; --blue-lt: #eff6ff; --blue-md: #dbeafe;
+  --green: #16a34a; --green-lt: #f0fdf4; --green-md: #dcfce7;
+  --purple: #7c3aed; --purple-lt: #f5f3ff; --purple-md: #ede9fe;
+  --ink: #1e293b; --ink2: #475569; --ink3: #94a3b8; --ink4: #cbd5e1;
+  --r: 12px; --r-sm: 8px;
+  --sh: 0 1px 3px rgba(0,0,0,.06); --sh-md: 0 4px 16px rgba(0,0,0,.09);
+}
+
+.page { max-width: 1150px; margin: 0 auto; padding: 1.25rem 1.5rem 2rem; }
+
+.back-link {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font-size: .78rem; font-weight: 600; color: var(--ink3);
+  text-decoration: none; margin-bottom: 1rem; transition: color .14s;
+}
+.back-link:hover { color: var(--blue); }
+
+.page-title { font-size: 1.4rem; font-weight: 700; color: var(--ink); margin-bottom: .25rem; }
+.page-subtitle { font-size: .83rem; color: var(--ink3); margin-bottom: 1.5rem; }
+
+/* ── Input area ── */
+.input-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); box-shadow: var(--sh);
+  padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;
+}
+.input-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: var(--ink3); font-weight: 700; margin-bottom: .5rem; display: block; }
+.symptom-input-box {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 6px; min-height: 48px; padding: 8px 12px;
+  border: 1.5px solid var(--border); border-radius: var(--r-sm);
+  background: var(--surface); cursor: text; transition: border-color .15s;
+}
+.symptom-input-box:focus-within { border-color: var(--blue); }
+.symptom-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px 3px 12px; background: var(--blue-lt);
+  color: var(--blue-d); border: 1px solid var(--blue-md);
+  border-radius: 9999px; font-size: .78rem; font-weight: 500; white-space: nowrap;
+}
+.symptom-tag .remove { cursor: pointer; color: #93c5fd; font-size: 14px; line-height: 1; margin-left: 2px; }
+.symptom-tag .remove:hover { color: var(--blue); }
+.symptom-text-input {
+  flex: 1; min-width: 160px; border: none; outline: none;
+  font-size: .88rem; color: var(--ink); background: transparent; padding: 4px 2px;
+}
+.symptom-text-input::placeholder { color: var(--ink3); }
+
+.symptom-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: white; border: 1px solid var(--border);
+  border-radius: var(--r-sm); max-height: 240px; overflow-y: auto;
+  display: none; z-index: 50; box-shadow: var(--sh-md);
+}
+.symptom-dropdown.active { display: block; }
+.symptom-option {
+  padding: 9px 14px; font-size: .85rem; color: var(--ink);
+  cursor: pointer; border-bottom: 1px solid #f1f5f9;
+}
+.symptom-option:last-child { border-bottom: none; }
+.symptom-option:hover { background: var(--surface2); color: var(--blue-d); }
+.no-results { padding: 10px 14px; font-size: .85rem; color: var(--ink3); font-style: italic; }
+
+.input-footer { margin-top: .85rem; display: flex; align-items: center; justify-content: space-between; }
+.selected-count { font-size: .72rem; color: var(--ink3); }
+
+.btn-analyse {
+  padding: .5rem 1.25rem; border-radius: var(--r-sm);
+  background: var(--blue); color: white; border: none;
+  font-size: .82rem; font-weight: 700; cursor: pointer;
+  transition: background .14s; font-family: inherit;
+}
+.btn-analyse:hover { background: var(--blue-d); }
+.btn-analyse:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── Results ── */
+.results-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1rem; flex-wrap: wrap; gap: .5rem;
+}
+.results-title { font-size: 1rem; font-weight: 700; color: var(--ink); }
+.results-subtitle { font-size: .72rem; color: var(--ink3); }
+
+.results-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+}
+@media (max-width: 1100px) { .results-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px)  { .results-grid { grid-template-columns: 1fr; } }
+
+/* ── Disease card with checkbox ── */
+.result-card {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--r); overflow: hidden; display: flex;
+  flex-direction: column; box-shadow: var(--sh);
+  transition: box-shadow .15s, border-color .15s;
+  position: relative; cursor: default;
+}
+.result-card:hover { box-shadow: var(--sh-md); border-color: var(--border2); }
+.result-card.selected { border-color: var(--purple) !important; box-shadow: 0 0 0 3px rgba(124,58,237,.13), var(--sh-md); }
+
+.card-rank-strip { height: 3px; background: var(--border); }
+.result-card.rank-1 .card-rank-strip { background: var(--blue); }
+.result-card.rank-2 .card-rank-strip { background: #64748b; }
+.result-card.rank-3 .card-rank-strip { background: #94a3b8; }
+
+/* ── Checkbox (hidden until hover or selected) ── */
+.card-checkbox-wrap {
+  position: absolute; top: 10px; left: 10px; z-index: 10;
+  opacity: 0; transition: opacity .15s; pointer-events: none;
+}
+.result-card:hover .card-checkbox-wrap,
+.result-card.selected .card-checkbox-wrap { opacity: 1; pointer-events: all; }
+
+.card-checkbox {
+  width: 20px; height: 20px; border-radius: 6px;
+  border: 2px solid var(--border2); background: white;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all .15s;
+}
+.card-checkbox:hover { border-color: var(--purple); }
+.result-card.selected .card-checkbox {
+  background: var(--purple); border-color: var(--purple);
+}
+.card-checkbox svg { display: none; }
+.result-card.selected .card-checkbox svg { display: block; }
+
+.card-body { padding: 1rem 1rem 1.1rem; display: flex; flex-direction: column; flex: 1; }
+.card-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.card-rank-label { font-size: .68rem; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: .05em; }
+.result-card.rank-1 .card-rank-label { color: var(--blue); }
+
+.card-disease { font-size: .9rem; font-weight: 700; color: var(--ink); line-height: 1.3; margin-bottom: 5px; text-transform: capitalize; }
+.confidence-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: .72rem; font-weight: 500; padding: 2px 9px;
+  border-radius: 9999px; background: #f1f5f9; color: var(--ink2);
+  margin-bottom: 10px; width: fit-content;
+}
+.result-card.rank-1 .confidence-badge { background: var(--blue-md); color: var(--blue-d); }
+
+.stat-row { display: flex; gap: 7px; margin-bottom: 12px; }
+.stat-box {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; padding: 7px 5px 5px; border-radius: 8px; gap: 2px;
+}
+.stat-box.matched { background: var(--blue-lt); border: 1px solid var(--blue-md); }
+.stat-box.missing { background: var(--surface2); border: 1px solid var(--border); }
+.stat-num { font-size: 1.2rem; font-weight: 700; line-height: 1; }
+.stat-box.matched .stat-num { color: var(--blue); }
+.stat-box.missing .stat-num { color: var(--ink3); }
+.stat-lbl { font-size: .63rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.stat-box.matched .stat-lbl { color: var(--blue); }
+.stat-box.missing .stat-lbl { color: var(--ink3); }
+
+.symptom-section { margin-top: auto; }
+.symptom-section + .symptom-section { margin-top: 9px; }
+.section-label {
+  font-size: .63rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--ink3); margin-bottom: 5px;
+  display: flex; align-items: center; gap: 4px;
+}
+.section-label .dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; }
+.section-label.matched-lbl .dot { background: var(--blue); }
+.section-label.missing-lbl  .dot { background: var(--ink3); }
+.chip-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: .68rem; padding: 2px 7px; border-radius: 9999px; white-space: nowrap;
+}
+.chip.matched { background: var(--blue-lt); color: var(--blue-d); border: 1px solid var(--blue-md); }
+.chip.missing { background: var(--surface2); color: var(--ink2); border: 1px solid var(--border); }
+.chip-w { font-size: .62rem; opacity: .6; font-weight: 600; }
+.section-divider { height: 1px; background: var(--border); margin: 9px 0; }
+
+/* ── Spinner ── */
+.spinner {
+  width: 20px; height: 20px; border: 2px solid var(--border);
+  border-top-color: var(--blue); border-radius: 50%;
+  animation: spin .75s linear infinite; flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-row { display: none; align-items: center; gap: .75rem; color: var(--ink3); font-size: .83rem; margin-bottom: 1rem; }
+.loading-row.visible { display: flex; }
+
+/* ── Save bar ── */
+.save-bar {
+  position: sticky; bottom: 0; background: white;
+  border-top: 1.5px solid var(--purple);
+  padding: .85rem 1.5rem; display: none;
+  align-items: center; justify-content: space-between;
+  gap: 1rem; z-index: 100; box-shadow: 0 -4px 20px rgba(0,0,0,.08);
+  flex-wrap: wrap;
+}
+.save-bar.visible { display: flex; }
+.save-bar-left { display: flex; align-items: center; gap: .65rem; }
+.save-bar-badge {
+  background: var(--purple); color: white;
+  font-size: .7rem; font-weight: 800; padding: .18rem .6rem;
+  border-radius: 99px;
+}
+.save-bar-text { font-size: .82rem; color: var(--ink2); font-weight: 600; }
+.save-bar-right { display: flex; gap: .55rem; align-items: center; }
+.btn-save {
+  padding: .5rem 1.35rem; border-radius: var(--r-sm);
+  background: var(--purple); color: white; border: none;
+  font-size: .82rem; font-weight: 700; cursor: pointer;
+  transition: background .14s; font-family: inherit;
+}
+.btn-save:hover { background: #6d28d9; }
+.btn-save:disabled { opacity: .5; cursor: not-allowed; }
+.btn-cancel-sel {
+  padding: .45rem .9rem; border-radius: var(--r-sm);
+  background: transparent; color: var(--ink3); border: 1px solid var(--border2);
+  font-size: .78rem; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: all .13s;
+}
+.btn-cancel-sel:hover { background: var(--surface2); }
+
+/* ── View more ── */
+.view-more-wrap { display: flex; justify-content: center; margin-top: 1.5rem; }
+.view-more-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: .45rem 1.25rem; border: 1px solid var(--border2);
+  border-radius: 9999px; font-size: .78rem; color: var(--ink3);
+  background: white; cursor: pointer; transition: all .15s;
+}
+.view-more-btn:hover { border-color: var(--blue); color: var(--blue); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page">
+
+  {% if visit_id %}
+  <a href="{% url 'visits:patient_detail' visit.patient.id %}" class="back-link">← Back to Patient</a>
+  {% else %}
+  <a href="{% url 'doctor_dashboard' %}" class="back-link">← Back to Dashboard</a>
+  {% endif %}
+
+  <div class="page-title">Symptom Checker</div>
+  <p class="page-subtitle">Enter the patient's symptoms to get ranked disease predictions with matched and missing indicators.</p>
+
+  <!-- Input Card -->
+  <div class="input-card">
+    <label class="input-label">Enter Symptoms</label>
+    <div style="position:relative;" id="symptomSelector">
+      <div class="symptom-input-box" id="selectedSymptomsDiv">
+        <input type="text" id="symptomInput" class="symptom-text-input" placeholder="Type to search symptoms…" autocomplete="off">
+      </div>
+      <div class="symptom-dropdown" id="symptomDropdown"></div>
+    </div>
+    <div class="input-footer">
+      <span id="selectedCount" class="selected-count">No symptoms selected</span>
+      <button id="searchBtn" disabled class="btn-analyse">Analyse</button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-row" id="loadingState">
+    <div class="spinner"></div>
+    Running prediction…
+  </div>
+
+  <!-- Results -->
+  <div id="resultsSection" style="display:none;">
+    <div class="results-header">
+      <span class="results-title">Predicted Conditions</span>
+      <span id="resultSubtitle" class="results-subtitle"></span>
+    </div>
+    <div class="results-grid" id="diseaseCards"></div>
+    <div class="view-more-wrap" id="viewMoreWrapper" style="display:none;">
+      <button class="view-more-btn" id="viewMoreBtn">
+        View more
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Save Bar (sticky bottom) -->
+<div class="save-bar" id="saveBar">
+  <div class="save-bar-left">
+    <span class="save-bar-badge" id="selCountBadge">0</span>
+    <span class="save-bar-text" id="selCountText">conditions selected</span>
+  </div>
+  <div class="save-bar-right">
+    <button class="btn-cancel-sel" id="clearSelBtn">Clear selection</button>
+    <button class="btn-save" id="saveBtn">Save to Visit</button>
+  </div>
+</div>
+
+<script>
+let availableSymptoms = [];
+let selectedSymptoms  = [];
+let allPredictions    = [];
+let selectedCardIds   = new Set();
+let visibleCount      = 4;
+
+const visitId        = "{{ visit_id|default:'' }}";
+const patientId      = "{{ visit.patient.id|default:'' }}";
+const csrfToken      = "{{ csrf_token }}";
+const backUrl        = patientId ? `/visits/patient/${patientId}/` : '/doctors/dashboard/';
+
+const symptomInput       = document.getElementById('symptomInput');
+const selectedSymptomsDiv= document.getElementById('selectedSymptomsDiv');
+const symptomDropdown    = document.getElementById('symptomDropdown');
+const searchBtn          = document.getElementById('searchBtn');
+const loadingState       = document.getElementById('loadingState');
+const resultsSection     = document.getElementById('resultsSection');
+const diseaseCards       = document.getElementById('diseaseCards');
+const selectedCount      = document.getElementById('selectedCount');
+const resultSubtitle     = document.getElementById('resultSubtitle');
+const viewMoreWrapper    = document.getElementById('viewMoreWrapper');
+const viewMoreBtn        = document.getElementById('viewMoreBtn');
+const saveBar            = document.getElementById('saveBar');
+const saveBtn            = document.getElementById('saveBtn');
+const clearSelBtn        = document.getElementById('clearSelBtn');
+const selCountBadge      = document.getElementById('selCountBadge');
+const selCountText       = document.getElementById('selCountText');
+
+async function loadSymptoms() {
+  try {
+    const res  = await fetch('/api/symptoms/');
+    const data = await res.json();
+    availableSymptoms = data.symptoms;
+  } catch(e) { console.error(e); }
+}
+
+function updateDropdown() {
+  const q = symptomInput.value.toLowerCase().trim();
+  if (!q) { symptomDropdown.classList.remove('active'); return; }
+  const filtered = availableSymptoms.filter(s =>
+    s.toLowerCase().includes(q) && !selectedSymptoms.includes(s)
+  );
+  if (!filtered.length) {
+    symptomDropdown.innerHTML = '<div class="no-results">No matching symptoms</div>';
+  } else {
+    symptomDropdown.innerHTML = filtered.slice(0,10).map(s =>
+      `<div class="symptom-option" data-symptom="${s}">${s}</div>`
+    ).join('');
+  }
+  symptomDropdown.classList.add('active');
+}
+
+function addSymptom(symptom) {
+  if (selectedSymptoms.includes(symptom)) return;
+  selectedSymptoms.push(symptom);
+  renderTags();
+  symptomInput.value = '';
+  symptomDropdown.classList.remove('active');
+  updateInputUI();
+}
+
+function removeSymptom(symptom) {
+  selectedSymptoms = selectedSymptoms.filter(s => s !== symptom);
+  renderTags();
+  updateInputUI();
+}
+
+function renderTags() {
+  selectedSymptomsDiv.querySelectorAll('.symptom-tag').forEach(t => t.remove());
+  selectedSymptoms.forEach(symptom => {
+    const tag = document.createElement('span');
+    tag.className = 'symptom-tag';
+    tag.innerHTML = `${symptom}<span class="remove" data-symptom="${symptom}">×</span>`;
+    selectedSymptomsDiv.insertBefore(tag, symptomInput);
+  });
+}
+
+function updateInputUI() {
+  const n = selectedSymptoms.length;
+  selectedCount.textContent = n === 0 ? 'No symptoms selected' : `${n} symptom${n>1?'s':''} selected`;
+  searchBtn.disabled = n === 0;
+}
+
+async function performSearch() {
+  if (!selectedSymptoms.length) return;
+  loadingState.classList.add('visible');
+  resultsSection.style.display = 'none';
+  searchBtn.disabled = true;
+  selectedCardIds.clear();
+  updateSaveBar();
+
+  try {
+    const res = await fetch('/api/predict/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+      body: JSON.stringify({ symptoms: selectedSymptoms })
+    });
+    const data = await res.json();
+    if (data.success) {
+      allPredictions = data.predictions;
+      visibleCount = 4;
+      displayResults();
+    } else {
+      alert('Error: ' + data.error);
+    }
+  } catch(e) {
+    alert('Failed to get predictions. Please try again.');
+  } finally {
+    loadingState.classList.remove('visible');
+    searchBtn.disabled = selectedSymptoms.length === 0;
+  }
+}
+
+function displayResults() {
+  diseaseCards.innerHTML = '';
+  const toShow = allPredictions.slice(0, visibleCount);
+  toShow.forEach((pred, i) => diseaseCards.appendChild(createCard(pred, i+1)));
+  resultSubtitle.textContent = `Showing ${toShow.length} of ${allPredictions.length} conditions`;
+  resultsSection.style.display = '';
+  viewMoreWrapper.style.display = allPredictions.length > visibleCount ? '' : 'none';
+  if (visibleCount === 4) resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function createCard(pred, rank) {
+  const card = document.createElement('div');
+  const rankClass = rank <= 3 ? ` rank-${rank}` : '';
+  card.className = 'result-card' + rankClass;
+  card.dataset.idx = rank - 1;
+
+  const conf = (pred.probability * 100).toFixed(1);
+  const matchedEntries = pred.matched_symptoms ? Object.entries(pred.matched_symptoms) : [];
+  const missingEntries = pred.missing_symptoms  ? Object.entries(pred.missing_symptoms).slice(0,6) : [];
+  const missingTotal   = pred.missing_symptoms  ? Object.keys(pred.missing_symptoms).length : 0;
+  const rankLabel      = rank===1?'Best match':rank===2?'2nd match':rank===3?'3rd match':`#${rank} match`;
+
+  const matchedChips = matchedEntries.map(([s,info]) =>
+    `<span class="chip matched">${s}<span class="chip-w">${(info.weight*100).toFixed(0)}%</span></span>`
+  ).join('');
+  const missingChips = missingEntries.map(([s,info]) =>
+    `<span class="chip missing">${s}<span class="chip-w">${(info.weight*100).toFixed(0)}%</span></span>`
+  ).join('');
+
+  card.innerHTML = `
+    <div class="card-rank-strip"></div>
+    <div class="card-checkbox-wrap">
+      <div class="card-checkbox" data-idx="${rank-1}">
+        <svg width="11" height="11" fill="none" viewBox="0 0 12 12">
+          <path d="M2 6l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-meta">
+        <span class="card-rank-label">${rankLabel}</span>
+      </div>
+      <div class="card-disease">${pred.disease}</div>
+      <span class="confidence-badge">${conf}% confidence</span>
+      <div class="stat-row">
+        <div class="stat-box matched">
+          <span class="stat-num">${matchedEntries.length}</span>
+          <span class="stat-lbl">Matched</span>
+        </div>
+        <div class="stat-box missing">
+          <span class="stat-num">${missingTotal}</span>
+          <span class="stat-lbl">Missing</span>
+        </div>
+      </div>
+      ${matchedChips ? `<div class="symptom-section">
+        <div class="section-label matched-lbl"><span class="dot"></span>Matched symptoms</div>
+        <div class="chip-list">${matchedChips}</div>
+      </div>` : ''}
+      ${matchedChips && missingChips ? '<div class="section-divider"></div>' : ''}
+      ${missingChips ? `<div class="symptom-section">
+        <div class="section-label missing-lbl"><span class="dot"></span>Missing symptoms</div>
+        <div class="chip-list">${missingChips}</div>
+      </div>` : ''}
+    </div>
+  `;
+
+  card.querySelector('.card-checkbox').addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleCardSelection(card, rank-1);
+  });
+  card.addEventListener('click', () => toggleCardSelection(card, rank-1));
+
+  return card;
+}
+
+function toggleCardSelection(card, idx) {
+  if (selectedCardIds.has(idx)) {
+    selectedCardIds.delete(idx);
+    card.classList.remove('selected');
+  } else {
+    selectedCardIds.add(idx);
+    card.classList.add('selected');
+  }
+  updateSaveBar();
+}
+
+function updateSaveBar() {
+  const n = selectedCardIds.size;
+  if (n > 0 && visitId) {
+    saveBar.classList.add('visible');
+    selCountBadge.textContent = n;
+    selCountText.textContent  = `condition${n>1?'s':''} selected`;
+  } else {
+    saveBar.classList.remove('visible');
+  }
+}
+
+clearSelBtn.addEventListener('click', () => {
+  selectedCardIds.clear();
+  document.querySelectorAll('.result-card.selected').forEach(c => c.classList.remove('selected'));
+  updateSaveBar();
+});
+
+saveBtn.addEventListener('click', async () => {
+  if (!visitId || selectedCardIds.size === 0) return;
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving…';
+
+  const selectedConditions = [...selectedCardIds].map(idx => allPredictions[idx]);
+
+  const resultText = buildResultText(selectedSymptoms, selectedConditions);
+
+  try {
+    const res  = await fetch(`/visits/save-ai/${visitId}/`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrfToken },
+      body:    new URLSearchParams({ field: 'ai_differential', result: resultText })
+    });
+    const data = await res.json();
+    if (data.status === 'ok') {
+      window.location.href = backUrl;
+    } else {
+      alert('Error saving: ' + (data.message || 'Unknown error'));
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save to Visit';
+    }
+  } catch(e) {
+    alert('Save failed. Please try again.');
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save to Visit';
+  }
+});
+
+function buildResultText(symptoms, conditions) {
+  const lines = [];
+  lines.push('SYMPTOMS_ENTERED:' + symptoms.join('|'));
+  conditions.forEach((c, i) => {
+    const matched = c.matched_symptoms ? Object.keys(c.matched_symptoms).join('|') : '';
+    const missing = c.missing_symptoms ? Object.keys(c.missing_symptoms).join('|') : '';
+    const conf    = (c.probability * 100).toFixed(1);
+    lines.push(`CONDITION_${i+1}:${c.disease}|CONF:${conf}|MATCHED:${matched}|MISSING:${missing}|COMPLETENESS:${(c.completeness*100).toFixed(0)}`);
+  });
+  return lines.join('\n');
+}
+
+symptomInput.addEventListener('input', updateDropdown);
+symptomInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const first = symptomDropdown.querySelector('.symptom-option');
+    if (first) addSymptom(first.dataset.symptom);
+  }
+});
+symptomDropdown.addEventListener('click', e => {
+  if (e.target.classList.contains('symptom-option')) addSymptom(e.target.dataset.symptom);
+});
+selectedSymptomsDiv.addEventListener('click', e => {
+  if (e.target.classList.contains('remove')) removeSymptom(e.target.dataset.symptom);
+});
+searchBtn.addEventListener('click', performSearch);
+document.addEventListener('click', e => {
+  if (!e.target.closest('#symptomSelector')) symptomDropdown.classList.remove('active');
+});
+viewMoreBtn.addEventListener('click', () => { visibleCount += 4; displayResults(); });
+
+loadSymptoms();
+</script>
+{% endblock %}

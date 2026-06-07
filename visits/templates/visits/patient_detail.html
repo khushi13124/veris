@@ -1,0 +1,678 @@
+<html><head></head><body>{% extends "accounts/base.html" %}
+{% load static %}
+
+{% block title %}{{ patient.full_name }} — Patient Detail{% endblock %}
+
+{% block extra_css %}
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f8fafc !important; font-family: inherit !important; color: #1e293b !important; }
+nav  { display: none !important; }
+main { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+
+:root {
+  --bg: #f8fafc; --surface: #fff; --surface2: #f8fafc;
+  --border: #e2e8f0; --border2: #cbd5e1;
+  --blue: #2563eb; --blue-d: #1d4ed8; --blue-lt: #eff6ff; --blue-md: #dbeafe;
+  --green: #16a34a; --green-lt: #f0fdf4; --green-md: #dcfce7;
+  --amber: #d97706; --amber-lt: #fffbeb;
+  --rose: #e11d48; --rose-lt: #fff1f2;
+  --purple: #7c3aed; --purple-lt: #f5f3ff; --purple-md: #ede9fe;
+  --ink: #1e293b; --ink2: #475569; --ink3: #94a3b8; --ink4: #cbd5e1;
+  --r: 12px; --r-sm: 8px;
+  --sh: 0 1px 3px rgba(0,0,0,.06); --sh-md: 0 4px 16px rgba(0,0,0,.09);
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+.page { max-width: 1150px; margin: 0 auto; padding: 1.25rem 1.5rem 2rem; }
+
+.back-link {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font-size: .78rem; font-weight: 600; color: var(--ink3);
+  text-decoration: none; margin-bottom: 1rem; transition: color .14s;
+}
+.back-link:hover { color: var(--blue); }
+
+.msg-list { margin-bottom: .9rem; }
+.msg { padding: .55rem .9rem; border-radius: var(--r-sm); font-size: .8rem; font-weight: 500; margin-bottom: .35rem; }
+.msg-success { background: var(--green-lt); color: #14532d; border: 1px solid #bbf7d0; }
+.msg-error   { background: var(--rose-lt);  color: #9f1239; border: 1px solid #fecdd3; }
+
+/* ── Patient header ── */
+.pt-header {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); box-shadow: var(--sh);
+  padding: .85rem 1.2rem; margin-bottom: 1.1rem;
+  display: flex; align-items: center; gap: .9rem;
+}
+.pth-avatar-ph {
+  width: 42px; height: 42px; border-radius: 50%;
+  background: var(--blue-lt); border: 2px solid var(--blue-md);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; flex-shrink: 0; font-weight: 700; color: var(--blue-d);
+}
+.pth-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid var(--blue-md); }
+.pth-name { font-size: 1.1rem; color: var(--ink); font-weight: 700; }
+.pth-id {
+  font-size: .72rem; font-weight: 700; color: var(--ink3); margin-left: .55rem;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 99px; padding: .12rem .55rem;
+}
+
+/* ── Buttons ── */
+.btn-primary {
+  display: inline-flex; align-items: center; gap: .38rem;
+  background: var(--blue); color: white; border: none;
+  padding: .55rem 1.1rem; border-radius: var(--r-sm);
+  font-size: .8rem; font-weight: 700; cursor: pointer;
+  transition: background .14s; font-family: inherit;
+}
+.btn-primary:hover { background: var(--blue-d); }
+.btn-sm {
+  font-size: .72rem; padding: .32rem .7rem; border-radius: var(--r-sm);
+  font-weight: 700; border: none; cursor: pointer;
+  font-family: inherit; transition: all .13s;
+  display: inline-flex; align-items: center; gap: .25rem;
+  text-decoration: none;
+}
+.btn-sm-blue   { background: var(--blue); color: white; }
+.btn-sm-blue:hover { background: var(--blue-d); }
+.btn-sm-ghost  { background: transparent; color: var(--ink2); border: 1px solid var(--border2); }
+.btn-sm-ghost:hover { background: var(--surface2); }
+.btn-sm-purple { background: var(--purple-lt); color: var(--purple); border: 1px solid #ddd6fe; }
+.btn-sm-purple:hover { background: var(--purple-md); }
+
+/* ── Layout ── */
+.two-col { display: grid; grid-template-columns: 1fr 290px; gap: 1.1rem; align-items: start; }
+.left-col { display: flex; flex-direction: column; gap: .9rem; }
+.sec-title { font-size: .63rem; text-transform: uppercase; letter-spacing: .09em; color: var(--ink3); font-weight: 700; margin-bottom: .65rem; }
+
+/* ══ CURRENT VISIT CARD ══ */
+.current-visit-card {
+  background: var(--surface);
+  border: 2px solid var(--blue);
+  border-radius: var(--r);
+  box-shadow: 0 0 0 4px rgba(37,99,235,.08), var(--sh-md);
+  overflow: hidden;
+}
+.cv-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .8rem 1.1rem;
+  background: linear-gradient(135deg, var(--blue-lt) 0%, #f0f9ff 100%);
+  border-bottom: 1px solid var(--blue-md);
+}
+.cv-header-left { display: flex; align-items: center; gap: .65rem; }
+.cv-badge-now { background: var(--blue); color: white; font-size: .65rem; font-weight: 800; padding: .18rem .55rem; border-radius: 99px; }
+.cv-date { font-size: .85rem; font-weight: 700; color: var(--ink); }
+.cv-status-badge { font-size: .65rem; font-weight: 700; padding: .15rem .52rem; border-radius: 99px; }
+.cvs-waiting     { background: #fef3c7; color: var(--amber); }
+.cvs-with_doctor { background: var(--blue-md); color: var(--blue-d); }
+.cvs-done        { background: var(--green-md); color: #15803d; }
+
+.cv-reason {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .6rem 1.1rem; background: var(--surface2);
+  border-bottom: 1px solid var(--border); font-size: .8rem;
+}
+.cv-reason .label { font-size: .62rem; text-transform: uppercase; letter-spacing: .07em; color: var(--ink3); font-weight: 700; flex-shrink: 0; }
+.cv-reason .value { color: var(--ink2); }
+
+.cv-form { padding: 1.1rem; }
+.cv-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin-bottom: .8rem; }
+.cv-field label { display: block; font-size: .62rem; text-transform: uppercase; letter-spacing: .07em; color: var(--ink3); font-weight: 700; margin-bottom: .32rem; }
+.cv-field textarea,
+.cv-field input[type="date"] {
+  width: 100%; background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: var(--r-sm); color: var(--ink); padding: .55rem .75rem;
+  font-size: .82rem; resize: vertical; transition: border-color .18s;
+  box-sizing: border-box; font-family: inherit;
+}
+.cv-field textarea:focus,
+.cv-field input:focus { outline: none; border-color: var(--blue); background: white; box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+.cv-field textarea { min-height: 80px; }
+.cv-field.full { grid-column: 1 / -1; }
+.cv-form-actions {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: .55rem; padding-top: .8rem; border-top: 1px solid var(--border);
+}
+
+/* ── AI / Differential section ── */
+.ai-result-block {
+  background: var(--purple-lt); border: 1px solid #ddd6fe;
+  border-radius: var(--r-sm); overflow: hidden; margin-top: .6rem;
+}
+.ai-result-header {
+  padding: .5rem .8rem; display: flex; align-items: center; gap: .5rem;
+  background: var(--purple-md); border-bottom: 1px solid #ddd6fe;
+}
+.ai-result-header-label { font-size: .62rem; text-transform: uppercase; letter-spacing: .07em; color: var(--purple); font-weight: 800; }
+
+.ai-symptoms-row {
+  padding: .55rem .8rem; border-bottom: 1px solid #ddd6fe;
+  display: flex; align-items: flex-start; gap: .65rem; flex-wrap: wrap;
+}
+.ai-symp-label { font-size: .6rem; text-transform: uppercase; letter-spacing: .07em; color: var(--purple); font-weight: 700; flex-shrink: 0; padding-top: 2px; }
+.ai-symp-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.ai-symp-chip {
+  background: white; border: 1px solid #ddd6fe; color: var(--purple);
+  border-radius: 99px; font-size: .68rem; font-weight: 600; padding: 2px 9px;
+}
+
+.ai-conditions-list { padding: .5rem .8rem; display: flex; flex-direction: column; gap: .5rem; }
+.ai-condition-item {
+  background: white; border: 1px solid #ddd6fe; border-radius: var(--r-sm);
+  padding: .55rem .75rem;
+}
+.ai-condition-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: .35rem; flex-wrap: wrap; gap: .4rem; }
+.ai-condition-name { font-size: .8rem; font-weight: 700; color: var(--purple); text-transform: capitalize; }
+.ai-condition-badges { display: flex; gap: .35rem; align-items: center; flex-wrap: wrap; }
+.ai-conf-badge {
+  font-size: .62rem; font-weight: 700; padding: .1rem .45rem; border-radius: 99px;
+  background: var(--blue-lt); color: var(--blue-d); border: 1px solid var(--blue-md);
+}
+.ai-complete-badge {
+  font-size: .62rem; font-weight: 700; padding: .1rem .45rem; border-radius: 99px;
+  background: var(--green-lt); color: var(--green); border: 1px solid #bbf7d0;
+}
+.ai-symptom-row-sm { display: flex; flex-wrap: wrap; gap: 4px; margin-top: .25rem; }
+.ai-chip-sm {
+  font-size: .63rem; padding: 1px 7px; border-radius: 99px;
+  font-weight: 500; white-space: nowrap;
+}
+.ai-chip-matched { background: var(--blue-lt); color: var(--blue-d); border: 1px solid var(--blue-md); }
+.ai-chip-missing { background: #f8fafc; color: var(--ink3); border: 1px solid var(--border); }
+.ai-chip-label { font-size: .6rem; color: var(--ink3); font-weight: 600; margin-right: 2px; }
+
+.ai-section { margin-top: .85rem; border-top: 1px solid var(--border); padding-top: .85rem; margin-bottom: .85rem; }
+.ai-section-header { display: flex; align-items: center; gap: .5rem; margin-bottom: .65rem; }
+.ai-badge { background: var(--purple-lt); color: var(--purple); font-size: .65rem; font-weight: 800; padding: .15rem .5rem; border-radius: 99px; border: 1px solid #ddd6fe; }
+
+/* ── Structured AI result display ── */
+.ai-saved-result {
+  background: var(--purple-lt); border: 1px solid #ddd6fe;
+  border-radius: var(--r-sm); padding: .7rem .9rem;
+  font-size: .79rem; color: var(--ink2); line-height: 1.6;
+  white-space: pre-wrap; margin-top: .5rem;
+}
+.ai-saved-label { font-size: .6rem; text-transform: uppercase; letter-spacing: .07em; color: var(--purple); font-weight: 700; margin-bottom: .3rem; }
+
+/* Symcat launch button row */
+.symcat-row {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .75rem; background: var(--purple-lt);
+  border: 1px solid #ddd6fe; border-radius: var(--r-sm);
+  margin-top: 10px;
+}
+.symcat-row-text { font-size: .78rem; color: var(--ink2); flex: 1; }
+.symcat-row-text strong { color: var(--purple); }
+
+/* ══ VISIT HISTORY CARDS ══ */
+.visit-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); box-shadow: var(--sh); overflow: hidden;
+  transition: box-shadow .17s; margin-bottom: .5rem;
+}
+.visit-card:hover { box-shadow: var(--sh-md); }
+
+.vc-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .72rem 1rem; background: var(--surface2);
+  cursor: pointer; user-select: none; border: none;
+  width: 100%; text-align: left; transition: background .14s;
+}
+.vc-header:hover { background: var(--blue-lt); }
+.vc-date { font-size: .78rem; font-weight: 700; color: var(--ink2); display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.vc-badge { font-size: .62rem; padding: .12rem .48rem; border-radius: 99px; font-weight: 700; }
+.vb-blue   { background: var(--blue-md);   color: var(--blue-d); }
+.vb-green  { background: var(--green-md);  color: #15803d; }
+.vb-gray   { background: #f1f5f9; color: var(--ink3); }
+.vb-purple { background: var(--purple-lt); color: var(--purple); }
+.vb-amber  { background: var(--amber-lt);  color: var(--amber); }
+
+.vc-chevron {
+  color: var(--ink3); flex-shrink: 0;
+  transition: transform .25s cubic-bezier(.4,0,.2,1);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+}
+.vc-body-wrapper { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s ease; }
+.vc-body-inner   { overflow: hidden; min-height: 0; }
+.visit-card.open .vc-body-wrapper { grid-template-rows: 1fr; }
+.visit-card.open .vc-chevron      { transform: rotate(180deg); }
+
+.vc-body { padding: 1rem; }
+.vc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem 1.1rem; }
+.vc-field .k { font-size: .6rem; text-transform: uppercase; letter-spacing: .07em; color: var(--ink3); font-weight: 700; margin-bottom: .22rem; }
+.vc-field .v { font-size: .79rem; color: var(--ink); line-height: 1.5; }
+.vc-field.full { grid-column: 1 / -1; }
+.vc-empty { font-size: .76rem; color: var(--ink3); font-style: italic; }
+.vc-next-appt {
+  display: inline-flex; align-items: center; gap: .32rem;
+  background: var(--blue-lt); color: var(--blue); border: 1px solid var(--blue-md);
+  border-radius: 99px; font-size: .7rem; font-weight: 700; padding: .2rem .65rem; margin-top: .7rem;
+}
+
+.vc-edit-form { padding: .9rem 1rem; border-top: 1px solid var(--border); background: var(--surface2); display: none; }
+.vc-edit-form.visible { display: block; }
+.vc-edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin-bottom: .6rem; }
+.vc-edit-field label { display: block; font-size: .6rem; text-transform: uppercase; letter-spacing: .07em; color: var(--ink3); font-weight: 700; margin-bottom: .28rem; }
+.vc-edit-field textarea,
+.vc-edit-field input[type="date"] {
+  width: 100%; background: white; border: 1.5px solid var(--border2);
+  border-radius: var(--r-sm); color: var(--ink); padding: .45rem .65rem;
+  font-size: .78rem; resize: vertical; box-sizing: border-box;
+  font-family: inherit; transition: border-color .15s;
+}
+.vc-edit-field textarea:focus,
+.vc-edit-field input:focus { outline: none; border-color: var(--blue); }
+.vc-edit-field textarea { min-height: 65px; }
+.vc-edit-field.full { grid-column: 1 / -1; }
+.vc-edit-actions { display: flex; gap: .4rem; }
+
+.other-dr-divider { display: flex; align-items: center; gap: .6rem; margin: .8rem 0 .6rem; }
+.other-dr-divider span { font-size: .62rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink3); font-weight: 700; white-space: nowrap; }
+.other-dr-divider::before, .other-dr-divider::after { content:''; flex:1; height:1px; background: var(--border2); }
+
+.no-visits { text-align: center; padding: 2rem 1rem; color: var(--ink3); }
+
+/* ── Right sidebar ── */
+.right-col { display: flex; flex-direction: column; gap: .8rem; }
+.info-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--sh); overflow: hidden; }
+.ic-head { padding: .65rem .95rem; display: flex; align-items: center; justify-content: space-between; background: var(--blue-lt); border-bottom: 1px solid var(--blue-md); }
+.ic-head h3 { font-size: .75rem; font-weight: 700; color: var(--blue-d); }
+.ic-head .badge { font-size: .6rem; background: var(--blue-md); color: var(--blue-d); padding: .08rem .42rem; border-radius: 99px; font-weight: 600; border: 1px solid #93c5fd; }
+.ic-body { padding: .1rem .9rem .5rem; }
+.ic-row { display: flex; justify-content: space-between; padding: .48rem 0; border-bottom: 1px solid var(--border); font-size: .76rem; gap: .8rem; }
+.ic-row:last-child { border-bottom: none; }
+.ic-row .k { color: var(--ink3); font-weight: 500; white-space: nowrap; }
+.ic-row .v { font-weight: 600; color: var(--ink); text-align: right; word-break: break-word; max-width: 60%; }
+.cond-tag { display: inline-block; background: var(--blue-lt); color: var(--blue-d); border: 1px solid var(--blue-md); border-radius: 5px; padding: .12rem .42rem; font-size: .65rem; font-weight: 600; margin: .12rem .15rem .12rem 0; }
+.med-table { width: 100%; border-collapse: collapse; font-size: .73rem; margin-top: .35rem; }
+.med-table th { background: var(--surface2); color: var(--ink2); font-weight: 700; padding: .45rem .65rem; text-align: left; border-bottom: 2px solid var(--border2); font-size: .66rem; }
+.med-table td { padding: .45rem .65rem; border-bottom: 1px solid var(--border); color: var(--ink); }
+.med-table tr:last-child td { border-bottom: none; }
+
+@media (max-width: 900px) {
+  .two-col { grid-template-columns: 1fr; }
+  .cv-form-grid { grid-template-columns: 1fr; }
+  .vc-grid { grid-template-columns: 1fr; }
+  .vc-edit-grid { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="page">
+
+  <a href="{% url 'doctor_dashboard' %}" class="back-link">← Back to Dashboard</a>
+
+  <!-- Messages -->
+  {% if messages %}
+  <div class="msg-list">
+    {% for message in messages %}
+    <div class="msg {% if message.tags == 'success' %}msg-success{% else %}msg-error{% endif %}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ══ PATIENT HEADER ══ -->
+  <div class="pt-header">
+    {% if patient.profile_photo %}
+      <img src="{{ patient.profile_photo.url }}" class="pth-avatar" alt="{{ patient.full_name }}">
+    {% else %}
+      <div class="pth-avatar-ph">{{ patient.full_name|first }}</div>
+    {% endif %}
+    <div>
+      <span class="pth-name">{{ patient.full_name }}</span>
+      <span class="pth-id">{{ patient.patient_id }}</span>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="left-col">
+
+      <!-- ══ CURRENT VISIT ══ -->
+      {% if active_visit and active_visit.status != 'done' %}
+      <div>
+        <div class="sec-title">Current Visit</div>
+        <div class="current-visit-card">
+
+          <div class="cv-header">
+            <div class="cv-header-left">
+              <span class="cv-badge-now">NOW</span>
+              <span class="cv-date">{{ active_visit.visit_date|date:"d M Y" }}</span>
+              <span class="cv-status-badge cvs-{{ active_visit.status }}">
+                {% if active_visit.status == 'waiting' %}Waiting
+                {% elif active_visit.status == 'with_doctor' %}With Doctor
+                {% endif %}
+              </span>
+            </div>
+            <span style="font-size:.72rem;color:var(--ink3);">#{{ active_visit.id }}</span>
+          </div>
+
+          {% if active_visit.remarks %}
+          <div class="cv-reason">
+            <span class="label">Reason for visit</span>
+            <span class="value">{{ active_visit.remarks }}</span>
+          </div>
+          {% endif %}
+
+          <form method="post" action="{% url 'visits:update_visit' active_visit.id %}" class="cv-form">
+            {% csrf_token %}
+            <div class="cv-form-grid">
+              <div class="cv-field">
+                <label for="cv-remarks">Remarks / Observations</label>
+                <textarea id="cv-remarks" name="remarks" placeholder="Doctor's notes…">{{ active_visit.remarks }}</textarea>
+              </div>
+              <div class="cv-field">
+                <label for="cv-diagnosis">Diagnosis Notes</label>
+                <textarea id="cv-diagnosis" name="diagnosis_notes" placeholder="Working diagnosis…">{{ active_visit.diagnosis_notes }}</textarea>
+              </div>
+              <div class="cv-field full">
+                <label for="cv-medication">Medication Prescribed</label>
+                <textarea id="cv-medication" name="medication" placeholder="Drug · dosage · frequency…" style="min-height:65px;">{{ active_visit.medication }}</textarea>
+              </div>
+              <div class="cv-field">
+                <label for="cv-next">Next Appointment</label>
+                <input type="date" id="cv-next" name="next_appointment" value="{{ active_visit.next_appointment|date:'Y-m-d' }}">
+              </div>
+            </div>
+
+            <!-- ══ AI TOOLS ══ -->
+            <div class="ai-section">
+              <div style="display:flex; align-items:center; gap:.55rem; flex-wrap:wrap;">
+                <a href="{% url 'symcat:symptom_checker' %}?visit_id={{ active_visit.id }}" class="btn-sm btn-sm-purple">
+                  Differential Diagnosis
+                </a>
+                <a href="{% url 'rsna:upload' %}?patient_id={{ patient.id }}&amp;visit_id={{ active_visit.id }}" class="btn-sm btn-sm-purple">
+                  {% if active_visit.ai_medical %}Upload New DICOM{% else %}Lumbar Spine Assessment{% endif %}
+                </a>
+              </div>
+
+              <!-- SYMCAT BLOCK -->
+              {% if active_visit.ai_differential %}
+              <div style="margin-top:.6rem;">
+                {% include "visits/_ai_result_block.html" with ai_text=active_visit.ai_differential %}
+              </div>
+              {% endif %}
+
+              <!-- RSNA BLOCK -->
+              {% if active_visit.ai_medical %}
+              <div style="margin-top:.6rem;">
+                <div class="ai-saved-label">Lumbar Spine Assessment Result</div>
+                <div class="ai-saved-result">{{ active_visit.ai_medical }}</div>
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="cv-form-actions">
+              <button type="submit" class="btn-primary">Save Visit</button>
+            </div>
+          </form>
+
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ══ VISIT HISTORY ══ -->
+      {% if my_visits %}
+      <div>
+        <div class="sec-title">Visit History with You ({{ my_visits|length }} total)</div>
+
+        {% for v in my_visits %}
+          {% if active_visit and active_visit.status != 'done' and v.id == active_visit.id %}
+            {# skip — shown above #}
+          {% else %}
+
+          <div class="visit-card" id="card-{{ v.id }}">
+
+            <button type="button" class="vc-header" data-card="card-{{ v.id }}">
+              <div class="vc-date">
+                {{ v.visit_date|date:"d M Y" }}
+                {% if forloop.first %}<span class="vc-badge vb-blue">Latest</span>{% endif %}
+                {% if v.next_appointment %}
+                  {% if v.next_appointment >= today %}<span class="vc-badge vb-green">Follow-up</span>{% endif %}
+                {% endif %}
+                {% if v.status == 'done' %}<span class="vc-badge vb-gray">Done</span>
+                {% elif v.status == 'with_doctor' %}<span class="vc-badge vb-blue">With Doctor</span>
+                {% elif v.status == 'waiting' %}<span class="vc-badge vb-amber">Waiting</span>
+                {% endif %}
+                {% if v.ai_differential %}<span class="vc-badge vb-purple">AI</span>{% endif %}
+              </div>
+              <span class="vc-chevron">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M3 5L7 9L11 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </span>
+            </button>
+
+            <div class="vc-body-wrapper">
+              <div class="vc-body-inner">
+                <div class="vc-body">
+                  <div class="vc-grid">
+
+                    <div class="vc-field">
+                      <div class="k">Remarks</div>
+                      <div class="v">{% if v.remarks %}{{ v.remarks|linebreaksbr }}{% else %}<span class="vc-empty">—</span>{% endif %}</div>
+                    </div>
+
+                    <div class="vc-field">
+                      <div class="k">Diagnosis Notes</div>
+                      <div class="v">{% if v.diagnosis_notes %}{{ v.diagnosis_notes|linebreaksbr }}{% else %}<span class="vc-empty">—</span>{% endif %}</div>
+                    </div>
+
+                    <div class="vc-field full">
+                      <div class="k">Medication Prescribed</div>
+                      <div class="v">{% if v.medication %}{{ v.medication|linebreaksbr }}{% else %}<span class="vc-empty">None prescribed</span>{% endif %}</div>
+                    </div>
+
+                    {% if v.ai_differential %}
+                    <div class="vc-field full">
+                      <div class="k">AI Differential Diagnosis</div>
+                      <div class="v" style="margin-top:.25rem;">
+                        {% include "visits/_ai_result_block.html" with ai_text=v.ai_differential %}
+                      </div>
+                    </div>
+                    {% endif %}
+
+                    {% if v.ai_medical %}
+                    <div class="vc-field full">
+                      <div class="k">AI Lumbar Spine Classification</div>
+                      <div class="v" style="background:var(--blue-lt);border:1px solid var(--blue-md);border-radius:var(--r-sm);padding:.6rem .75rem;color:var(--ink2);line-height:1.55;white-space:pre-wrap;">{{ v.ai_medical }}</div>
+                    </div>
+                    {% endif %}
+
+                  </div>
+
+                  {% if v.next_appointment %}
+                  <div class="vc-next-appt">
+                    Next: {{ v.next_appointment|date:"d M Y" }}
+                    {% if v.next_appointment < today %}<span style="color:var(--amber);margin-left:.3rem;">· Overdue</span>{% endif %}
+                  </div>
+                  {% endif %}
+
+                  <div style="margin-top:.75rem;display:flex;gap:.4rem;flex-wrap:wrap;">
+                    <button type="button" class="btn-sm btn-sm-ghost" onclick="toggleEdit('edit-{{ v.id }}', this)">Edit</button>
+                  </div>
+                </div>
+
+                <div class="vc-edit-form" id="edit-{{ v.id }}">
+                  <form method="post" action="{% url 'visits:update_visit' v.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="keep_status" value="1">
+                    <div class="vc-edit-grid">
+                      <div class="vc-edit-field">
+                        <label>Remarks</label>
+                        <textarea name="remarks">{{ v.remarks }}</textarea>
+                      </div>
+                      <div class="vc-edit-field">
+                        <label>Diagnosis Notes</label>
+                        <textarea name="diagnosis_notes">{{ v.diagnosis_notes }}</textarea>
+                      </div>
+                      <div class="vc-edit-field full">
+                        <label>Medication</label>
+                        <textarea name="medication" style="min-height:55px;">{{ v.medication }}</textarea>
+                      </div>
+                      <div class="vc-edit-field">
+                        <label>Next Appointment</label>
+                        <input type="date" name="next_appointment" value="{{ v.next_appointment|date:'Y-m-d' }}">
+                      </div>
+                    </div>
+                    <div class="vc-edit-actions">
+                      <button type="submit" class="btn-sm btn-sm-blue">Save</button>
+                      <button type="button" class="btn-sm btn-sm-ghost" onclick="toggleEdit('edit-{{ v.id }}', null)">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Other doctors -->
+      {% if other_visits %}
+      <div>
+        <div class="other-dr-divider"><span>Visits with other doctors</span></div>
+        {% for v in other_visits %}
+        <div class="visit-card" id="ocard-{{ v.id }}">
+          <button type="button" class="vc-header" data-card="ocard-{{ v.id }}">
+            <div class="vc-date">
+              {{ v.visit_date|date:"d M Y" }}
+              <span class="vc-badge vb-gray">Dr. {{ v.doctor.full_name }}</span>
+              <span class="vc-badge vb-gray">{{ v.get_status_display|default:v.status }}</span>
+            </div>
+            <span class="vc-chevron">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M3 5L7 9L11 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </span>
+          </button>
+          <div class="vc-body-wrapper">
+            <div class="vc-body-inner">
+              <div class="vc-body">
+                <div class="vc-grid">
+                  <div class="vc-field">
+                    <div class="k">Remarks</div>
+                    <div class="v">{% if v.remarks %}{{ v.remarks|linebreaksbr }}{% else %}<span class="vc-empty">—</span>{% endif %}</div>
+                  </div>
+                  <div class="vc-field">
+                    <div class="k">Diagnosis</div>
+                    <div class="v">{% if v.diagnosis_notes %}{{ v.diagnosis_notes|linebreaksbr }}{% else %}<span class="vc-empty">—</span>{% endif %}</div>
+                  </div>
+                  <div class="vc-field full">
+                    <div class="k">Medication</div>
+                    <div class="v">{% if v.medication %}{{ v.medication|linebreaksbr }}{% else %}<span class="vc-empty">None</span>{% endif %}</div>
+                  </div>
+                </div>
+                <div style="font-size:.68rem;color:var(--ink3);margin-top:.5rem;font-style:italic;">
+                  Attended by Dr. {{ v.doctor.full_name }} · {{ v.doctor.specialization|default:"General" }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if not active_visit and not my_visits %}
+      <div class="no-visits">No visits recorded yet for this patient.</div>
+      {% endif %}
+
+    </div><!-- /left-col -->
+
+    <!-- ── RIGHT SIDEBAR ── -->
+    <div class="right-col">
+      <div class="info-card">
+        <div class="ic-head"><h3>Personal Info</h3><span class="badge">Section A</span></div>
+        <div class="ic-body">
+          <div class="ic-row"><span class="k">Mobile</span><span class="v">{{ patient.mobile_number }}</span></div>
+          <div class="ic-row"><span class="k">Email</span><span class="v" style="font-size:.7rem;">{{ patient.email }}</span></div>
+          <div class="ic-row"><span class="k">D.O.B</span><span class="v">{{ patient.date_of_birth|date:"d M Y" }}</span></div>
+          <div class="ic-row"><span class="k">Age / Gender</span><span class="v">{{ patient.age }} yrs · {{ patient.gender }}</span></div>
+          <div class="ic-row"><span class="k">Blood Group</span><span class="v">{{ patient.blood_group }}</span></div>
+          <div class="ic-row"><span class="k">Insurance</span><span class="v">{{ patient.insurance_provider }}</span></div>
+          <div class="ic-row"><span class="k">City</span><span class="v">{{ patient.city }}, {{ patient.state }}</span></div>
+        </div>
+      </div>
+
+      {% with mh=patient.medical_histories.first %}
+      {% if mh %}
+      <div class="info-card">
+        <div class="ic-head"><h3>Medical History</h3><span class="badge">Latest</span></div>
+        <div class="ic-body">
+          <div class="ic-row">
+            <span class="k">Conditions</span>
+            <span class="v">
+              {% if mh.medical_conditions %}
+                {% for c in mh.medical_conditions %}{% if c != "None" %}<span class="cond-tag">{{ c }}</span>{% endif %}{% endfor %}
+              {% else %}None recorded{% endif %}
+            </span>
+          </div>
+          <div class="ic-row"><span class="k">Allergies</span><span class="v">{{ mh.allergies|default:"None" }}</span></div>
+          <div class="ic-row"><span class="k">Surgeries</span><span class="v">{{ mh.surgeries|default:"None"|truncatechars:30 }}</span></div>
+          <div class="ic-row"><span class="k">Smoking</span><span class="v">{{ mh.smoking }}</span></div>
+          <div class="ic-row"><span class="k">Alcohol</span><span class="v">{{ mh.alcohol }}</span></div>
+          <div class="ic-row"><span class="k">Ht / Wt</span><span class="v">{{ mh.height_cm }}cm / {{ mh.weight_kg }}kg</span></div>
+          {% if mh.bmi %}<div class="ic-row"><span class="k">BMI</span><span class="v">{{ mh.bmi }}</span></div>{% endif %}
+        </div>
+      </div>
+      {% if mh.current_medications %}
+      <div class="info-card">
+        <div class="ic-head"><h3>Current Medications</h3><span class="badge">Now</span></div>
+        <div style="padding:.5rem;">
+          
+              {% for med in mh.current_medications %}
+              
+              {% endfor %}
+            <table class="med-table">
+            <thead><tr><th>Drug</th><th>Dosage</th><th>Freq.</th></tr></thead>
+            <tbody><tr>
+                <td>{{ med.name|default:"—" }}</td>
+                <td>{{ med.dosage|default:"—" }}</td>
+                <td>{{ med.frequency|default:"—" }}</td>
+              </tr></tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+      {% endif %}
+      {% endwith %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.vc-header').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const cardId = this.getAttribute('data-card');
+      const card = document.getElementById(cardId);
+      if (card) card.classList.toggle('open');
+    });
+  });
+});
+
+function toggleEdit(formId, btn) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+  const opening = !form.classList.contains('visible');
+  const card = form.closest('.visit-card');
+  if (card && opening) card.classList.add('open');
+  form.classList.toggle('visible', opening);
+  if (btn) btn.textContent = opening ? 'Cancel' : 'Edit';
+}
+</script>
+{% endblock %}</body></html>

@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Veris Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-white min-h-screen flex items-center justify-center">
+
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 border border-slate-100">
+
+        <!-- Logo / Title -->
+        <div class="text-center mb-8">
+            <img src="{% static 'images/logo.png' %}" alt="Veris Logo" class="h-12 w-auto mx-auto mb-4">
+            <h1 class="text-2xl font-semibold text-slate-800">
+                Veris
+            </h1>
+            <p class="text-sm text-slate-500 mt-1">
+                Sign in to continue
+            </p>
+        </div>
+
+        <!-- Error Messages -->
+        {% if form.non_field_errors %}
+            <div class="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <!-- Login Form -->
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                    Email
+                </label>
+                {{ form.email }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                    Password
+                </label>
+                {{ form.password }}
+            </div>
+
+            <button type="submit"
+                class="w-full bg-slate-700 hover:bg-slate-800 text-white py-2.5 rounded-lg transition duration-200 font-medium">
+                Sign In
+            </button>
+        </form>
+
+        <!-- Footer -->
+        <div class="mt-6 text-center text-xs text-slate-400">
+            © 2026 Veris
+        </div>
+
+    </div>
+
+</body>
+</html>
