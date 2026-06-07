@@ -1,4 +1,4 @@
-# Veris 🏥
+# Veris 
 ### AI-Powered Clinical Decision Support System for Small Hospitals
 
 Veris is a full-stack Django web application that unifies three problems small hospitals typically have no solution for: patient records management, AI-assisted differential diagnosis from symptoms, and automated lumbar spine MRI grading. All three modules live under one roof, with AI embedded from the start rather than bolted on later.
