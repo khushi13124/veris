@@ -336,8 +336,8 @@ python -m src.module5_inference --smoke-only
 | Ishita Ahir | IU2241230512 |
 | Khushi Patel | IU2241230525 |
 
-**Guide:** Asst. Prof. Urvi Rabara, Assistant Professor, CSE Department  
-**Institution:** Indus Institute of Technology and Engineering, Indus University, Ahmedabad — Nov 2025
+**Guide:** Asst. Prof. Rupal Kharya Professor, CSE Department  
+**Institution:** Indus Institute of Technology and Engineering, Indus University, Ahmedabad — May 2026
 
 ## License
 
